@@ -1,5 +1,7 @@
 ﻿using sodoffmmo;
+using sodoffmmo.Core;
 using System.Net;
 
-Server server = new(IPAddress.Any, 9933);
+Configuration.Initialize();
+Server server = new(IPAddress.Any, Configuration.ServerConfiguration.Port);
 await server.Run();

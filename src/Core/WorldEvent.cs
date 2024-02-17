@@ -195,7 +195,7 @@ class WorldEvent {
     
     // schedule next event, set timer to call PreInit() and send new WEN_ info
     private void PostEndEvent2(Object source, ElapsedEventArgs e) {
-        ScheduleEvent(30); // WE_ != WEN_
+        ScheduleEvent(Configuration.ServerConfiguration.EventTimer); // WE_ != WEN_
         AnnounceEvent(false, true); // send only WEN_ (WE_ should stay unchanged ... as WE_..._End)
     }
     
