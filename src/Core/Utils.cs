@@ -28,12 +28,15 @@ internal static class Utils {
         return VlNetworkPacket(vl, roomID);
     }
 
-    public static NetworkPacket ArrNetworkPacket(string[] data) {
+    public static NetworkPacket ArrNetworkPacket(string[] data, string c = "", int? roomID = null) {
         NetworkObject cmd = new();
         NetworkObject obj = new();
         obj.Add("arr", data);
-        cmd.Add("c", "");
+        cmd.Add("c", c);
         cmd.Add("p", obj);
-        return NetworkObject.WrapObject(1, 13, cmd).Serialize();
+        NetworkObject ret = NetworkObject.WrapObject(1, 13, cmd);
+        if (roomID != null)
+            ret.Add("r", (int)roomID);
+        return ret.Serialize();
     }
 }
