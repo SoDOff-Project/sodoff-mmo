@@ -49,14 +49,14 @@ class WorldEvent {
     private string lastResults = "";
     
     // reset event - set new id, start time, end time, etc
-    private void Reset(float time = 2) {
+    private void Reset(DateTime newStartTime) {
         lock (EventLock) {
             room = Room.GetOrAdd("HubTrainingDO");
             uid = Path.GetRandomFileName().Substring(0, 8); // this is used as RandomSeed for random select ship variant
             operatorAI = null;
             state = State.NotActive;
             
-            startTime = DateTime.UtcNow.AddMinutes(time);
+            startTime = newStartTime;
             startTimeString = startTime.ToString("MM/dd/yyyy HH:mm:ss");
             AITime = startTime.AddMinutes(-1);
             UpdateEndTime(600 + 90);
@@ -77,15 +77,18 @@ class WorldEvent {
     }
     
     // schedule next event and set timer to call PreInit
-    private void ScheduleEvent(float minutes) {
-        nextStartTime = DateTime.UtcNow.AddMinutes(minutes);
+    private void ScheduleEvent(float minutes = 0) {
+        if (minutes > 2)
+            nextStartTime = DateTime.UtcNow.AddMinutes(minutes);
+        else
+            nextStartTime = startTime.AddMinutes(Configuration.ServerConfiguration.EventTimer);
         nextStartTimeString = nextStartTime.ToString("MM/dd/yyyy HH:mm:ss");;
-        SetTimer(minutes*60 - 120, PreInit);
+        SetTimer((nextStartTime - DateTime.UtcNow).TotalSeconds - 120, PreInit);
     }
     
     // reset event and set timer to call PreEndEvent, send new WE_ info
     private void PreInit(Object source, ElapsedEventArgs e) {
-        Reset(); // WE_ == WEN_
+        Reset(nextStartTime); // WE_ == WEN_
         AnnounceEvent();
     }
     
@@ -195,7 +198,7 @@ class WorldEvent {
     
     // schedule next event, set timer to call PreInit() and send new WEN_ info
     private void PostEndEvent2(Object source, ElapsedEventArgs e) {
-        ScheduleEvent(Configuration.ServerConfiguration.EventTimer); // WE_ != WEN_
+        ScheduleEvent(); // WE_ != WEN_
         AnnounceEvent(false, true); // send only WEN_ (WE_ should stay unchanged ... as WE_..._End)
     }
     
