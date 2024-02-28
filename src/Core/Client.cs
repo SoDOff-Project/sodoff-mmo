@@ -58,6 +58,26 @@ public class Client {
             Room = null;
         }
     }
+    
+    public void JoinRoom(Room room) {
+        LeaveRoom();
+        InvalidatePlayerData();
+        Room = room;
+        Send(Room.RespondJoinRoom());
+        Send(Room.SubscribeRoom());
+        UpdatePlayerUserVariables();
+    }
+
+    private void UpdatePlayerUserVariables() {
+        foreach (Client c in Room.Clients) {
+            NetworkObject cmd = new();
+            NetworkObject obj = new();
+            cmd.Add("c", "SUV");
+            obj.Add("MID", c.ClientID);
+            cmd.Add("p", obj);
+            Send(NetworkObject.WrapObject(1, 13, cmd).Serialize());
+        }
+    }
 
     public void InvalidatePlayerData() {
         PlayerData = new();

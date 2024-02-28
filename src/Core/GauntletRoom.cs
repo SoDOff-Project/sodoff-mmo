@@ -124,15 +124,8 @@ public class GauntletRoom : Room {
         if (room is null)
             room = GauntletRoom.Get();
 
-        room.AddPlayer(client); // must be call before InvalidatePlayerData - we need uid
-
-        client.LeaveRoom();
-        client.InvalidatePlayerData();
-
-        client.Send(room.RespondJoinRoom());
-        client.Send(room.SubscribeRoom());
+        room.AddPlayer(client); // must be call before JoinRoom (before InvalidatePlayerData) - we need uid
+        client.JoinRoom(room);
         room.SendUJR();
-
-        client.Room = room;
     }
 }

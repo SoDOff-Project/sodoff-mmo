@@ -3,7 +3,6 @@ using sodoffmmo.Data;
 
 namespace sodoffmmo.Core;
 public class Room {
-    static int id = 2;
     static Dictionary<string, Room> rooms = new();
 
     List<Client> clients = new();
