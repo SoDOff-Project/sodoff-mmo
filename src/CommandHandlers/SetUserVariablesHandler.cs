@@ -67,17 +67,17 @@ class SetUserVariablesHandler : ICommandHandler {
         if (FP != null) {
             client.PlayerData.Fp = FP;
             data2.Add("FP", client.PlayerData.Fp);
-            vl.Add(NetworkArray.StringParam("FP", client.PlayerData.Fp));
+            vl.Add(NetworkArray.Param("FP", client.PlayerData.Fp));
         }
         if (PU != null) {
             client.PlayerData.Pu = PU;
             data2.Add("PU", client.PlayerData.Pu);
-            vl.Add(NetworkArray.StringParam("PU", client.PlayerData.Pu));
+            vl.Add(NetworkArray.Param("PU", client.PlayerData.Pu));
         }
         if (L != null) {
             client.PlayerData.L = L;
             data2.Add("L", client.PlayerData.L);
-            vl.Add(NetworkArray.StringParam("L", client.PlayerData.L));
+            vl.Add(NetworkArray.Param("L", client.PlayerData.L));
         }
 
         data.Add("vl", vl);
@@ -116,29 +116,29 @@ class SetUserVariablesHandler : ICommandHandler {
         user.Add((short)client.ClientID);
 
         NetworkArray playerData = new();
-        playerData.Add(NetworkArray.DoubleParam("R1", client.PlayerData.R1));
-        playerData.Add(NetworkArray.StringParam("FP", client.PlayerData.Fp));
-        playerData.Add(NetworkArray.DoubleParam("MX", client.PlayerData.Mx));
-        playerData.Add(NetworkArray.StringParam("UDT", client.PlayerData.Udt));
-        playerData.Add(NetworkArray.DoubleParam("P2", client.PlayerData.P2));
-        playerData.Add(NetworkArray.DoubleParam("NT", Runtime.CurrentRuntime));
-        playerData.Add(NetworkArray.IntParam("t", (int)(Runtime.CurrentRuntime / 1000)));
-        playerData.Add(NetworkArray.StringParam("J", client.PlayerData.J));
-        playerData.Add(NetworkArray.IntParam("F", client.PlayerData.F));
-        playerData.Add(NetworkArray.IntParam("MBF", client.PlayerData.Mbf));
-        playerData.Add(NetworkArray.DoubleParam("R2", client.PlayerData.R2));
-        playerData.Add(NetworkArray.DoubleParam("R", client.PlayerData.R));
-        playerData.Add(NetworkArray.StringParam("BU", client.PlayerData.Bu));
-        playerData.Add(NetworkArray.DoubleParam("P1", client.PlayerData.P1));
-        playerData.Add(NetworkArray.StringParam("UID", client.PlayerData.Uid));
-        playerData.Add(NetworkArray.DoubleParam("R3", client.PlayerData.R3));
-        playerData.Add(NetworkArray.StringParam("PU", client.PlayerData.Pu));
-        playerData.Add(NetworkArray.StringParam("A", client.PlayerData.A));
-        playerData.Add(NetworkArray.StringParam("RA", client.PlayerData.Ra));
-        playerData.Add(NetworkArray.DoubleParam("P3", client.PlayerData.P3));
-        playerData.Add(NetworkArray.StringParam("CU", client.PlayerData.Cu));
-        playerData.Add(NetworkArray.StringParam("M", client.PlayerData.M));
-        playerData.Add(NetworkArray.StringParam("L", client.PlayerData.L));
+        playerData.Add(NetworkArray.Param("R1", client.PlayerData.R1));
+        playerData.Add(NetworkArray.Param("FP", client.PlayerData.Fp));
+        playerData.Add(NetworkArray.Param("MX", client.PlayerData.Mx));
+        playerData.Add(NetworkArray.Param("UDT", client.PlayerData.Udt));
+        playerData.Add(NetworkArray.Param("P2", client.PlayerData.P2));
+        playerData.Add(NetworkArray.Param("NT", (double)Runtime.CurrentRuntime));
+        playerData.Add(NetworkArray.Param("t", (int)(Runtime.CurrentRuntime / 1000)));
+        playerData.Add(NetworkArray.Param("J", client.PlayerData.J));
+        playerData.Add(NetworkArray.Param("F", client.PlayerData.F));
+        playerData.Add(NetworkArray.Param("MBF", client.PlayerData.Mbf));
+        playerData.Add(NetworkArray.Param("R2", client.PlayerData.R2));
+        playerData.Add(NetworkArray.Param("R", client.PlayerData.R));
+        playerData.Add(NetworkArray.Param("BU", client.PlayerData.Bu));
+        playerData.Add(NetworkArray.Param("P1", client.PlayerData.P1));
+        playerData.Add(NetworkArray.Param("UID", client.PlayerData.Uid));
+        playerData.Add(NetworkArray.Param("R3", client.PlayerData.R3));
+        playerData.Add(NetworkArray.Param("PU", client.PlayerData.Pu));
+        playerData.Add(NetworkArray.Param("A", client.PlayerData.A));
+        playerData.Add(NetworkArray.Param("RA", client.PlayerData.Ra));
+        playerData.Add(NetworkArray.Param("P3", client.PlayerData.P3));
+        playerData.Add(NetworkArray.Param("CU", client.PlayerData.Cu));
+        playerData.Add(NetworkArray.Param("M", client.PlayerData.M));
+        playerData.Add(NetworkArray.Param("L", client.PlayerData.L));
 
         user.Add(playerData);
         data.Add("u", user);

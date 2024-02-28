@@ -163,28 +163,10 @@ class WorldEvent {
             }
             
             NetworkArray vl = new();
-            NetworkArray vl1 = new();
-            vl1.Add("WE__AI");
-            vl1.Add((Byte)0);
-            vl1.Add("");
-            vl1.Add(false);
-            vl1.Add(false);
-            vl.Add(vl1);
+            vl.Add(NetworkArray.VlElement("WE__AI", NetworkArray.NULL));
             foreach (var t in health) {
-                NetworkArray vl2 = new();
-                vl2.Add("WEH_" + t.Key);
-                vl2.Add((Byte)0);
-                vl2.Add("");
-                vl2.Add(false);
-                vl2.Add(false);
-                vl.Add(vl2);
-                NetworkArray vl3 = new();
-                vl3.Add("WEF_" + t.Key);
-                vl3.Add((Byte)0);
-                vl3.Add("");
-                vl3.Add(false);
-                vl3.Add(false);
-                vl.Add(vl3);
+                vl.Add(NetworkArray.VlElement("WEH_" + t.Key, NetworkArray.NULL));
+                vl.Add(NetworkArray.VlElement("WEF_" + t.Key, NetworkArray.NULL));
             }
             packet = Utils.VlNetworkPacket(vl, room.Id);
             foreach (var roomClient in room.Clients) {
@@ -235,24 +217,11 @@ class WorldEvent {
     public NetworkArray EventInfoArray(bool WE = true, bool WEN = true) {
         NetworkArray vl = new();
         if (WE) {
-            NetworkArray vl1 = new();
-            vl1.Add("WE_ScoutAttack");
-            vl1.Add((Byte)4);
-            vl1.Add(EventInfo());
-            vl1.Add(false);
-            vl1.Add(true);
-            vl.Add(vl1);
+            vl.Add(NetworkArray.VlElement("WE_ScoutAttack", EventInfo(), isPersistent:true));
         }
         if (WEN) {
-            NetworkArray vl2 = new();
-            vl2.Add("WEN_ScoutAttack");
-            vl2.Add((Byte)4);
-            vl2.Add(nextStartTimeString);
-            vl2.Add(false);
-            vl2.Add(true);
-            vl.Add(vl2);
+            vl.Add(NetworkArray.VlElement("WEN_ScoutAttack", nextStartTimeString, isPersistent:true));
         }
-        
         return vl;
     }
     

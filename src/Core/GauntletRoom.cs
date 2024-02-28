@@ -100,7 +100,6 @@ public class GauntletRoom : Room {
             List<string> info = new();
             info.Add("GC");
             info.Add(base.Id.ToString());
-            int i = 0;
             foreach(var player in players) {
                 if (player.Value.resultA is null)
                     continue;

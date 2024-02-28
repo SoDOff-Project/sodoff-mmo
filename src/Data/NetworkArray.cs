@@ -102,27 +102,41 @@ public class NetworkArray {
         return false;
     }
 
-    public static NetworkArray DoubleParam(string name, double value) {
-        NetworkArray arr = new();
-        arr.Add(name);
-        arr.Add((byte)3);
-        arr.Add(value);
-        return arr;
+    public class NullClass {};
+    public static NullClass NULL;
+    
+    public void AddWithType<T>(T value) {
+        if (typeof(T) == typeof(NullClass))
+            AddWithTypeObject(NetworkDataType.Null, 0, null);
+        else if (typeof(T) == typeof(bool))
+            AddWithTypeObject(NetworkDataType.Bool, 1, value);
+        else if (typeof(T) == typeof(int))
+            AddWithTypeObject(NetworkDataType.Int, 2, value);
+        else if (typeof(T) == typeof(double))
+            AddWithTypeObject(NetworkDataType.Double, 3, value);
+        else if (typeof(T) == typeof(string))
+            AddWithTypeObject(NetworkDataType.String, 4, value);
+        else
+            throw new Exception("Unsupported type");
+    }
+    
+    private void AddWithTypeObject(NetworkDataType dataType, byte typeId, object obj) {
+        Add(new DataWrapper(NetworkDataType.Byte,typeId));
+        Add(new DataWrapper(dataType, obj));
     }
 
-    public static NetworkArray StringParam(string name, string value) {
+    public static NetworkArray Param<T>(string name, T value) {
         NetworkArray arr = new();
         arr.Add(name);
-        arr.Add((byte)4);
-        arr.Add(value);
+        arr.AddWithType(value);
         return arr;
     }
-
-    public static NetworkArray IntParam(string name, int value) {
+    public static NetworkArray VlElement<T>(string name, T value, bool isPrivate = false, bool isPersistent = false) {
         NetworkArray arr = new();
         arr.Add(name);
-        arr.Add((byte)2);
-        arr.Add(value);
+        arr.AddWithType(value);
+        arr.Add(isPrivate);
+        arr.Add(isPersistent);
         return arr;
     }
 }

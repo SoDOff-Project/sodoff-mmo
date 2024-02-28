@@ -18,13 +18,7 @@ internal static class Utils {
 
     public static NetworkPacket VlNetworkPacket(string a, string b, int roomID) {
         NetworkArray vl = new();
-        NetworkArray vl2 = new();
-        vl2.Add(a);
-        vl2.Add((Byte)4);
-        vl2.Add(b);
-        vl2.Add(false);
-        vl2.Add(false);
-        vl.Add(vl2);
+        vl.Add(NetworkArray.VlElement(a, b));
         return VlNetworkPacket(vl, roomID);
     }
 
