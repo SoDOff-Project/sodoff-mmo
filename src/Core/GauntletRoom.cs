@@ -20,7 +20,9 @@ public class GauntletRoom : Room {
         return newroom;
     }
 
-    public GauntletRoom(string name) : base (name, "GauntletDO", true) { }
+    public GauntletRoom(string name) : base (name, "GauntletDO") {
+        base.RoomVariables.Add(NetworkArray.VlElement("IS_RACE_ROOM", true));
+    }
 
 
     class Status {

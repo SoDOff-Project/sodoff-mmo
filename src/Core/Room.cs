@@ -12,9 +12,9 @@ public class Room {
     public int Id { get; private set; }
     public string Name { get; private set; }
     public string Group { get; private set; }
-    public bool IsRaceRoom { get; private set; }
+    public NetworkArray RoomVariables = new();
 
-    public Room(string name, string group = null, bool isRaceRoom = false) {
+    public Room(string name, string group = null) {
         Id = rooms.Count + 3;
         Name = name;
         if (group is null) {
@@ -22,7 +22,6 @@ public class Room {
         } else {
             Group = group;
         }
-        IsRaceRoom = isRaceRoom;
         rooms.Add(Name, this);
     }
 
@@ -71,30 +70,14 @@ public class Room {
         roomInfo.Add(Id);
         roomInfo.Add(Name); // Room Name
         roomInfo.Add(Group); // Group Name
-        roomInfo.Add(true);
-        roomInfo.Add(false);
-        roomInfo.Add(false);
-        if (IsRaceRoom) {
-            NetworkArray raceRoom = new();
-            raceRoom.Add("IS_RACE_ROOM");
-            raceRoom.Add((Byte)1);
-            raceRoom.Add(true);
-            raceRoom.Add(false);
-            raceRoom.Add(false);
-
-            NetworkArray raceRoom2 = new();
-            raceRoom2.Add(raceRoom);
-
-            roomInfo.Add((short)1);
-            roomInfo.Add((short)2);
-            roomInfo.Add(raceRoom2);
-        } else {
-            roomInfo.Add((short)24);
-            roomInfo.Add((short)27);
-            roomInfo.Add(new NetworkArray());
-        }
-        roomInfo.Add((short)0);
-        roomInfo.Add((short)0);
+        roomInfo.Add(true); // is game
+        roomInfo.Add(false); // is hidden
+        roomInfo.Add(false); // is password protected
+        roomInfo.Add((short)clients.Count); // player count
+        roomInfo.Add((short)4096); // max player count
+        roomInfo.Add(RoomVariables); // variables
+        roomInfo.Add((short)0); // spectator count
+        roomInfo.Add((short)0); // max spectator count
 
         NetworkArray userList = new();
         foreach (Client player in Clients) {
@@ -121,40 +104,16 @@ public class Room {
         r1.Add(true);
         r1.Add(false);
         r1.Add(false);
-        if (IsRaceRoom) {
-            r1.Add((short)1);
-            r1.Add((short)2);
-        } else {
-            r1.Add((short)24);
-            r1.Add((short)27);
-        }
+        r1.Add((short)clients.Count); // player count
+        r1.Add((short)4096); // max player count
         r1.Add(new NetworkArray());
         r1.Add((short)0);
         r1.Add((short)0);
 
-        NetworkArray r2 = new();
-        r2.Add(Id);
-        r2.Add(Name); // Room Name
-        r2.Add(Group); // Group Name
-        r2.Add(true);
-        r2.Add(false);
-        r2.Add(false);
-        if (IsRaceRoom) {
-            r2.Add((short)1);
-            r2.Add((short)2);
-        } else {
-            r2.Add((short)7);
-            r2.Add((short)27);
-        }
-        r2.Add(new NetworkArray());
-        r2.Add((short)0);
-        r2.Add((short)0);
-
         list.Add(r1);
-        list.Add(r2);
 
         obj.Add("rl", list);
-        obj.Add("g", Name);
+        obj.Add("g", Group);
         return NetworkObject.WrapObject(0, 15, obj).Serialize();
     }
 }
