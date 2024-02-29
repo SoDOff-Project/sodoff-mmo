@@ -109,38 +109,7 @@ class SetUserVariablesHandler : ICommandHandler {
         NetworkObject acknowledgement = new();
         data.Add("r", client.Room.Id);
 
-        NetworkArray user = new();
-        user.Add(client.ClientID);
-        user.Add(client.PlayerData.Uid);
-        user.Add((short)1);
-        user.Add((short)client.ClientID);
-
-        NetworkArray playerData = new();
-        playerData.Add(NetworkArray.Param("R1", client.PlayerData.R1));
-        playerData.Add(NetworkArray.Param("FP", client.PlayerData.Fp));
-        playerData.Add(NetworkArray.Param("MX", client.PlayerData.Mx));
-        playerData.Add(NetworkArray.Param("UDT", client.PlayerData.Udt));
-        playerData.Add(NetworkArray.Param("P2", client.PlayerData.P2));
-        playerData.Add(NetworkArray.Param("NT", (double)Runtime.CurrentRuntime));
-        playerData.Add(NetworkArray.Param("t", (int)(Runtime.CurrentRuntime / 1000)));
-        playerData.Add(NetworkArray.Param("J", client.PlayerData.J));
-        playerData.Add(NetworkArray.Param("F", client.PlayerData.F));
-        playerData.Add(NetworkArray.Param("MBF", client.PlayerData.Mbf));
-        playerData.Add(NetworkArray.Param("R2", client.PlayerData.R2));
-        playerData.Add(NetworkArray.Param("R", client.PlayerData.R));
-        playerData.Add(NetworkArray.Param("BU", client.PlayerData.Bu));
-        playerData.Add(NetworkArray.Param("P1", client.PlayerData.P1));
-        playerData.Add(NetworkArray.Param("UID", client.PlayerData.Uid));
-        playerData.Add(NetworkArray.Param("R3", client.PlayerData.R3));
-        playerData.Add(NetworkArray.Param("PU", client.PlayerData.Pu));
-        playerData.Add(NetworkArray.Param("A", client.PlayerData.A));
-        playerData.Add(NetworkArray.Param("RA", client.PlayerData.Ra));
-        playerData.Add(NetworkArray.Param("P3", client.PlayerData.P3));
-        playerData.Add(NetworkArray.Param("CU", client.PlayerData.Cu));
-        playerData.Add(NetworkArray.Param("M", client.PlayerData.M));
-        playerData.Add(NetworkArray.Param("L", client.PlayerData.L));
-
-        user.Add(playerData);
+        NetworkArray user = client.PlayerData.GetNetworkData(client.ClientID, out NetworkArray playerData);
         data.Add("u", user);
 
         acknowledgement.Add("u", client.ClientID);
@@ -169,7 +138,7 @@ class SetUserVariablesHandler : ICommandHandler {
 
         NetworkPacket packet = NetworkObject.WrapObject(1, 13, cmd).Serialize();
         foreach (var roomClient in client.Room.Clients) {
-            if (roomClient != client.Room.Clients)
+            if (roomClient != client)
                 roomClient.Send(packet);
         }
     }

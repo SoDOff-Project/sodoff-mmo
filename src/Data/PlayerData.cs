@@ -22,10 +22,7 @@ public class PlayerData {
     // position z
     public double P3 { get; set; }
 
-    // network time
-    public string Nt { get; set; } = "1.0";
-    // timestamp
-    public int T { get; set; } = 0;
+    
     // join (?)
     public string J { get; set; } = "2";
     // flags (?)
@@ -99,21 +96,21 @@ public class PlayerData {
     }
     private string fp = "";
 
-    public NetworkArray GetNetworkData(int clientID) {
+    public NetworkArray GetNetworkData(int clientID, out NetworkArray paramArr) {
         NetworkArray arr = new();
         arr.Add(clientID);
         arr.Add(Uid);
         arr.Add((short)1);
         arr.Add((short)clientID);
 
-        NetworkArray paramArr = new();
+        paramArr = new();
         paramArr.Add(NetworkArray.Param("R1", R1));
         paramArr.Add(NetworkArray.Param("FP", Fp));
         paramArr.Add(NetworkArray.Param("MX", Mx));
         paramArr.Add(NetworkArray.Param("UDT", Udt));
         paramArr.Add(NetworkArray.Param("P2", P2));
-        paramArr.Add(NetworkArray.Param("NT", Nt));
-        paramArr.Add(NetworkArray.Param("t", T));
+        paramArr.Add(NetworkArray.Param("NT", (double)(Runtime.CurrentRuntime))); // network time
+        paramArr.Add(NetworkArray.Param("t", (int)(Runtime.CurrentRuntime / 1000))); // timestamp
         paramArr.Add(NetworkArray.Param("J", J));
         paramArr.Add(NetworkArray.Param("F", F));
         paramArr.Add(NetworkArray.Param("MBF", Mbf));
