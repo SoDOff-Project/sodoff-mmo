@@ -9,11 +9,13 @@ public class Server {
 
     readonly int port;
     readonly IPAddress ipAddress;
+    readonly bool IPv6AndIPv4;
     ModuleManager moduleManager = new();
 
-    public Server(IPAddress ipAdress, int port) {
+    public Server(IPAddress ipAdress, int port, bool IPv6AndIPv4) {
         this.ipAddress = ipAdress;
         this.port = port;
+        this.IPv6AndIPv4 = IPv6AndIPv4;
     }
 
     public async Task Run() {
@@ -21,7 +23,8 @@ public class Server {
         using Socket listener = new(ipAddress.AddressFamily,
                                     SocketType.Stream,
                                     ProtocolType.Tcp);
-
+        if (IPv6AndIPv4)
+            listener.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, 0);
         listener.Bind(new IPEndPoint(ipAddress, port));
         await Listen(listener);
     }

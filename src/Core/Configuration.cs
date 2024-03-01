@@ -24,8 +24,10 @@ internal static class Configuration {
 }
 
 internal sealed class ServerConfiguration {
-    public bool EnableChat { get; set; } = true;
+    public string ListenIP { get; set; } = string.Empty;
     public int Port { get; set; } = 9933;
     public int EventTimer { get; set; } = 30;
-
+    public int FirstEventTimer { get; set; } = 10;
+    public bool EnableChat { get; set; } = true;
+    public bool AllowChaos { get; set; } = false;
 }

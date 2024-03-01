@@ -84,7 +84,7 @@ public class PlayerData {
             if (keyValPairs.TryGetValue("U", out string userdata)) {
                 PetMounted = (userdata == "0" || userdata == "1");
             }
-            if (PetMounted &&
+            if (PetMounted && !Configuration.ServerConfiguration.AllowChaos &&
                 (GeometryType == PetGeometryType.Default && PetAge < PetAge.Teen
                 || GeometryType == PetGeometryType.Terror && PetAge < PetAge.Titan)
             ) {

@@ -26,7 +26,7 @@ class WorldEvent {
         startTimeString = startTime.ToString("MM/dd/yyyy HH:mm:ss");
         uid = "sodoff";
         state = State.End;
-        ScheduleEvent(10); // WE_ != WEN_
+        ScheduleEvent(Configuration.ServerConfiguration.FirstEventTimer); // WE_ != WEN_
     }
     
     // controlled (init/reset) by Reset()
