@@ -6,7 +6,7 @@ public class Room {
     static Dictionary<string, Room> rooms = new();
 
     List<Client> clients = new();
-    public object roomLock = new object();
+    protected object roomLock = new object();
 
     public int Id { get; private set; }
     public string Name { get; private set; }
@@ -38,6 +38,9 @@ public class Room {
 
     public void AddClient(Client client) {
         lock (roomLock) {
+            client.Send(RespondJoinRoom());
+            // NOTE: send RespondJoinRoom() and add client to clients as atomic operation
+            //       to make sure to client get full list of players in room
             clients.Add(client);
         }
     }

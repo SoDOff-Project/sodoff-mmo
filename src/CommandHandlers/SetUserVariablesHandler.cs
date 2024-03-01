@@ -47,7 +47,7 @@ class SetUserVariablesHandler : ICommandHandler {
         client.PlayerData.Fp = suvData.Get<string>("FP");
 
         Console.WriteLine($"SUV {client.Room.Name} IID: {client.ClientID}");
-        client.Room.AddClient(client);
+
         UpdatePlayersInRoom();
         SendSUVToPlayerInRoom();
     }

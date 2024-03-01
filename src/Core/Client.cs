@@ -63,7 +63,7 @@ public class Client {
         LeaveRoom();
         InvalidatePlayerData();
         Room = room;
-        Send(Room.RespondJoinRoom());
+        Room.AddClient(this);
         Send(Room.SubscribeRoom());
         UpdatePlayerUserVariables();
     }
