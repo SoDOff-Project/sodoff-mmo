@@ -28,6 +28,8 @@ internal sealed class ServerConfiguration {
     public int Port { get; set; } = 9933;
     public int EventTimer { get; set; } = 30;
     public int FirstEventTimer { get; set; } = 10;
+    public int RacingMaxPlayers { get; set; } = 6;
+    public int RacingMinPlayers { get; set; } = 2;
     public bool EnableChat { get; set; } = true;
     public bool AllowChaos { get; set; } = false;
 }
