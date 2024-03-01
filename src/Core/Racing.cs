@@ -13,26 +13,13 @@ public enum RacingPlayerState {
 }
 
 public class RacingRoom : Room {
-    static List<RacingRoom> RacingRooms = new();
     static Random random = new Random();
 
     public static RacingRoom Get() {
-        foreach (var room in RacingRooms) {
-            if (room.ClientsCount == 0) {
-                room.Reset();
-                return room;
-            }
-        }
-        var newroom = new RacingRoom("RacingDragon" + "_" + RacingRooms.Count.ToString());
-        RacingRooms.Add(newroom);
-        return newroom;
+        return new RacingRoom();
     }
 
-    public RacingRoom(string name, int? trackId = null) : base (name, "RacingDragon") {
-        Reset(trackId);
-    }
-
-    private void Reset(int? trackId = null) {
+    public RacingRoom(string name = null, int? trackId = null) : base (name, "RacingDragon", true) {
        if (trackId is null) {
             TID = random.Next(105);
         } else {
@@ -47,7 +34,7 @@ public class RacingRoom : Room {
         base.RoomVariables.Add(NetworkArray.VlElement("IS_RACE_ROOM", "SINGLERACE#1#1#SINGLERACE#0#2"));
         base.RoomVariables.Add(NetworkArray.VlElement("TID", TID));
     }
-
+    
     public int TID;
 
     // players ready status
@@ -267,7 +254,6 @@ public class RacingLobby {
         lock (lobbyLock) {
             if (GetPlayersCount(RacingPlayerState.Ready) >= Configuration.ServerConfiguration.RacingMinPlayers) {
                 int i = 0;
-                List<Client> toRemove = new();
                 RacingRoom room = RacingRoom.Get();
                 foreach (var player in lobbyPlayers) {
                     if (player.Value.state == RacingPlayerState.Ready) {
@@ -284,11 +270,8 @@ public class RacingLobby {
                     }
                 }
                 // join clients to racing room and start countdown
+                // after change room, client will be removed from lobbyPlayers (in GetPS)
                 room.Init();
-
-                foreach (var player in toRemove) {
-                    lobbyPlayers.Remove(player);
-                }
 
                 return true;
             }
@@ -297,16 +280,26 @@ public class RacingLobby {
     }
     
     public static NetworkPacket GetPS() {
+        List<Client> toRemove = new();
+        Room room = Room.Get("DragonRacingDO");
+
         // {"a":13,"c":1,"p":{"c":"PS","p":{"arr":["RA","","PS","e6147216-8100-4552-864d-be8f1347e201","8cb5842d-735a-4259-80af-e2e204b9c2bd"]}}}
         List<string> info = new();
         info.Add("RA");
         info.Add("");
         info.Add("PS");
         foreach(var player in lobbyPlayers) {
-            if (player.Value.state != RacingPlayerState.InRacingRoom) {
+            if (player.Key.Room != room) {
+                toRemove.Add(player.Key);
+            } else if (player.Value.state != RacingPlayerState.InRacingRoom) {
                 info.Add(player.Value.uid);
             }
         }
+
+        foreach (var player in toRemove) {
+            lobbyPlayers.Remove(player);
+        }
+
         return Utils.ArrNetworkPacket(info.ToArray(), "PS");
     }
 }

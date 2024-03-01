@@ -3,7 +3,8 @@ using sodoffmmo.Data;
 
 namespace sodoffmmo.Core;
 public class Room {
-    static Dictionary<string, Room> rooms = new();
+    public static int MaxId { get; private set; } = 2;
+    protected static Dictionary<string, Room> rooms = new();
 
     List<Client> clients = new();
     protected object roomLock = new object();
@@ -11,16 +12,23 @@ public class Room {
     public int Id { get; private set; }
     public string Name { get; private set; }
     public string Group { get; private set; }
+    public bool AutoRemove { get; private set; }
+    public bool IsRemoved { get; private set; } = false;
     public NetworkArray RoomVariables = new();
 
-    public Room(string name, string group = null) {
-        Id = rooms.Count + 3;
-        Name = name;
+    public Room(string name, string group = null, bool autoRemove = false) {
+        Id = ++MaxId;
+        if (name is null) {
+            Name = group + "_" + MaxId;
+        } else {
+            Name = name;
+        }
         if (group is null) {
             Group = name;
         } else {
             Group = group;
         }
+        AutoRemove = autoRemove;
         rooms.Add(Name, this);
     }
 
@@ -38,6 +46,8 @@ public class Room {
 
     public void AddClient(Client client) {
         lock (roomLock) {
+            if (IsRemoved)
+                throw new Exception("Call AddClient on removed room");
             client.Send(RespondJoinRoom());
             // NOTE: send RespondJoinRoom() and add client to clients as atomic operation
             //       to make sure to client get full list of players in room
@@ -48,6 +58,10 @@ public class Room {
     public void RemoveClient(Client client) {
         lock (roomLock) {
             clients.Remove(client);
+            if (AutoRemove && ClientsCount == 0) {
+                IsRemoved = true;
+                rooms.Remove(Name);
+            }
         }
     }
 

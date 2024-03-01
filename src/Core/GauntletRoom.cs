@@ -3,27 +3,22 @@ using sodoffmmo.Data;
 
 namespace sodoffmmo.Core;
 public class GauntletRoom : Room {
-    static List<GauntletRoom> GauntletRooms = new();
+    static GauntletRoom NextRoom = null;
 
     public static GauntletRoom Get() {
-        foreach (var room in GauntletRooms) {
-            if (room.ClientsCount < 2) {
-                lock (room.roomLock) {
-                    if (room.ClientsCount == 0)
-                        room.players.Clear();
-                }
-                return room;
-            }
+        if (NextRoom != null && NextRoom.ClientsCount == 1) {
+            var ret = NextRoom;
+            NextRoom = null;
+            return ret;
+        } else {
+            NextRoom = new GauntletRoom();
+            return NextRoom;
         }
-        var newroom = new GauntletRoom("GauntletDO" + "_" + GauntletRooms.Count.ToString());
-        GauntletRooms.Add(newroom);
-        return newroom;
     }
 
-    public GauntletRoom(string name) : base (name, "GauntletDO") {
+    public GauntletRoom(string name = null) : base (name, "GauntletDO", true) {
         base.RoomVariables.Add(NetworkArray.VlElement("IS_RACE_ROOM", true));
     }
-
 
     class Status {
         public string uid;
@@ -119,13 +114,17 @@ public class GauntletRoom : Room {
             return true;
         }
     }
-    
-    static public void Join(Client client, GauntletRoom room = null) {
-        if (room is null)
-            room = GauntletRoom.Get();
 
-        room.AddPlayer(client); // must be call before JoinRoom (before InvalidatePlayerData) - we need uid
-        client.JoinRoom(room);
-        room.SendUJR();
+    static object joinLock = new object();
+
+    static public void Join(Client client, GauntletRoom room = null) {
+        lock(joinLock) {
+            if (room is null)
+                room = GauntletRoom.Get();
+
+            room.AddPlayer(client); // must be call before JoinRoom (before InvalidatePlayerData) - we need uid
+            client.JoinRoom(room);
+            room.SendUJR();
+        }
     }
 }
