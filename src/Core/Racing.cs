@@ -261,8 +261,6 @@ public class RacingLobby {
                             break;
                         // set client state in Lobby
                         player.Value.state = RacingPlayerState.InRacingRoom;
-                        // mark client to remove from Lobby
-                        toRemove.Add(player.Key);
                         // send TID info to client
                         player.Key.Send(room.GetTIDPacket());
                         // set client state in racing room
