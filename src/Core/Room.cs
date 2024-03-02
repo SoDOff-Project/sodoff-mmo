@@ -16,15 +16,15 @@ public class Room {
     public bool IsRemoved { get; private set; } = false;
     public NetworkArray RoomVariables = new();
 
-    public Room(string name, string group = null, bool autoRemove = false) {
+    public Room(string? name, string? group = null, bool autoRemove = false) {
         Id = ++MaxId;
         if (name is null) {
-            Name = group + "_" + MaxId;
+            Name = group! + "_" + MaxId;
         } else {
             Name = name;
         }
         if (group is null) {
-            Group = name;
+            Group = name!;
         } else {
             Group = group;
         }

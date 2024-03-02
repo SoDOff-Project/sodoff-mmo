@@ -18,7 +18,7 @@ class RacingPlayerReadyHandler : ICommandHandler
         // so server do not need generate this packet
         
         if (client.Room.Group == "RacingDragon") {
-            RacingRoom room = client.Room as RacingRoom;
+            RacingRoom room = (client.Room as RacingRoom)!;
             room.SetPlayerState(client, ready);
             Console.WriteLine($"IMR Lobby: {client.ClientID} {ready}");
             room.TryLoad();
@@ -44,7 +44,7 @@ class RacingPlayerStatusHandler : ICommandHandler
 class RacingUACKHandler : ICommandHandler
 {
     public void Handle(Client client, NetworkObject receivedObject) {
-        RacingRoom room = client.Room as RacingRoom;
+        RacingRoom room = (client.Room as RacingRoom)!;
         room.SetPlayerState(client, RacingPlayerState.RaceReady1);
     }
 }
@@ -54,7 +54,7 @@ class RacingUACKHandler : ICommandHandler
 class RacingARACKHandler : ICommandHandler
 {
     public void Handle(Client client, NetworkObject receivedObject) {
-        RacingRoom room = client.Room as RacingRoom;
+        RacingRoom room = (client.Room as RacingRoom)!;
         room.SetPlayerState(client, RacingPlayerState.RaceReady2);
 
         if (room.GetPlayersCount(RacingPlayerState.RaceReady2) == room.ClientsCount) {
@@ -71,7 +71,7 @@ class RacingARACKHandler : ICommandHandler
 class RacingARHandler : ICommandHandler
 {
     public void Handle(Client client, NetworkObject receivedObject) { // {"a":13,"c":1,"p":{"c":"dr.AR","p":{"CT":"112.1268","FD":"3008.283","LC":"3","UN":"scourgexxwulf","en":""},"r":412467}}
-        RacingRoom room = client.Room as RacingRoom;
+        RacingRoom room = (client.Room as RacingRoom)!;
         NetworkObject p = receivedObject.Get<NetworkObject>("p");
         
         room.SetResults(client, p.Get<string>("UN"), p.Get<string>("CT"), p.Get<string>("LC"));

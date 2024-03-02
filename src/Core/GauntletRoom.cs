@@ -3,34 +3,38 @@ using sodoffmmo.Data;
 
 namespace sodoffmmo.Core;
 public class GauntletRoom : Room {
-    static GauntletRoom NextRoom = null;
+    static GauntletRoom? NextRoom = null;
 
     public static GauntletRoom Get() {
         if (NextRoom != null && NextRoom.ClientsCount == 1) {
-            var ret = NextRoom;
+            var ret = NextRoom!;
             NextRoom = null;
             return ret;
         } else {
             NextRoom = new GauntletRoom();
-            return NextRoom;
+            return NextRoom!;
         }
     }
 
-    public GauntletRoom(string name = null) : base (name, "GauntletDO", true) {
+    public GauntletRoom() : base (null, "GauntletDO", true) {
         base.RoomVariables.Add(NetworkArray.VlElement("IS_RACE_ROOM", true));
     }
 
     class Status {
         public string uid;
         public bool isReady = false;
-        public string resultA = null;
-        public string resultB = null;
+        public string resultA = "";
+        public string resultB = "";
+
+        public Status(string uid) {
+            this.uid = uid;
+        }
     }
 
     private Dictionary<Client, Status> players = new();
 
     public void AddPlayer(Client client) {
-        players[client] = new Status { uid = client.PlayerData.Uid };
+        players[client] = new Status(client.PlayerData.Uid);
     }
 
     public void SetPlayerReady(Client client, bool status = true) {
@@ -51,7 +55,6 @@ public class GauntletRoom : Room {
         info.Add("UJR"); // User Joined Room
         info.Add(base.Id.ToString());
         info.Add("2");
-        int i = 0;
         foreach(var player in players) {
             info.Add(player.Value.uid);
             info.Add(player.Value.isReady.ToString());
@@ -70,7 +73,6 @@ public class GauntletRoom : Room {
         info.Add("PA"); // Play Again
         info.Add(base.Id.ToString());
         info.Add("1");
-        int i = 0;
         foreach(var player in players) {
             info.Add(player.Value.uid);
             info.Add(player.Value.isReady.ToString());
@@ -88,7 +90,7 @@ public class GauntletRoom : Room {
 
             int count = 0;
             foreach(var player in players) {
-                if (player.Value.resultA != null) ++count;
+                if (player.Value.resultB != "") ++count;
             }
             if (count != 2)
                 return false;
@@ -98,7 +100,7 @@ public class GauntletRoom : Room {
             info.Add("GC");
             info.Add(base.Id.ToString());
             foreach(var player in players) {
-                if (player.Value.resultA is null)
+                if (player.Value.resultB == "")
                     continue;
                 info.Add(player.Value.uid);
                 info.Add(player.Value.resultA);
@@ -117,7 +119,7 @@ public class GauntletRoom : Room {
 
     static object joinLock = new object();
 
-    static public void Join(Client client, GauntletRoom room = null) {
+    static public void Join(Client client, GauntletRoom? room = null) {
         lock(joinLock) {
             if (room is null)
                 room = GauntletRoom.Get();

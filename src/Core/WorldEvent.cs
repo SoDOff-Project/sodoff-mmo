@@ -9,10 +9,10 @@ class WorldEvent {
         End,
         NotActive
     }
-    private static WorldEvent _instance = null;
+    private static WorldEvent? _instance = null;
     private object EventLock = new object();
     private Random random = new Random();
-    private System.Timers.Timer timer = null;
+    private System.Timers.Timer? timer = null;
     
     public static WorldEvent Get() {
         if (_instance == null) {
@@ -24,6 +24,7 @@ class WorldEvent {
     private WorldEvent() {
         startTime = DateTime.UtcNow.AddMinutes(-60);
         startTimeString = startTime.ToString("MM/dd/yyyy HH:mm:ss");
+        room = Room.GetOrAdd("HubTrainingDO");
         uid = "sodoff";
         state = State.End;
         ScheduleEvent(Configuration.ServerConfiguration.FirstEventTimer); // WE_ != WEN_
@@ -32,7 +33,7 @@ class WorldEvent {
     // controlled (init/reset) by Reset()
     private Room room;
     private string uid;
-    private Client operatorAI;
+    private Client? operatorAI;
     private State state;
     
     private DateTime startTime;
@@ -51,7 +52,6 @@ class WorldEvent {
     // reset event - set new id, start time, end time, etc
     private void Reset(DateTime newStartTime) {
         lock (EventLock) {
-            room = Room.GetOrAdd("HubTrainingDO");
             uid = Path.GetRandomFileName().Substring(0, 8); // this is used as RandomSeed for random select ship variant
             operatorAI = null;
             state = State.NotActive;
@@ -87,7 +87,7 @@ class WorldEvent {
     }
     
     // reset event and set timer to call PreEndEvent, send new WE_ info
-    private void PreInit(Object source, ElapsedEventArgs e) {
+    private void PreInit(Object? source, ElapsedEventArgs e) {
         Reset(nextStartTime); // WE_ == WEN_
         AnnounceEvent();
     }
@@ -114,7 +114,7 @@ class WorldEvent {
         }
     }
     
-    private void PreEndEvent(Object source, ElapsedEventArgs e) {
+    private void PreEndEvent(Object? source, ElapsedEventArgs e) {
         Console.WriteLine($"Event {uid} force end from timer");
         EndEvent(true);
     }
@@ -152,7 +152,7 @@ class WorldEvent {
     }
     
     // send reward info
-    private void PostEndEvent1(Object source, ElapsedEventArgs e) {
+    private void PostEndEvent1(Object? source, ElapsedEventArgs e) {
             NetworkPacket packet = Utils.VlNetworkPacket(
                 "WE_ScoutAttack_End",
                 lastResults,
@@ -179,7 +179,7 @@ class WorldEvent {
     }
     
     // schedule next event, set timer to call PreInit() and send new WEN_ info
-    private void PostEndEvent2(Object source, ElapsedEventArgs e) {
+    private void PostEndEvent2(Object? source, ElapsedEventArgs e) {
         ScheduleEvent(); // WE_ != WEN_
         AnnounceEvent(false, true); // send only WEN_ (WE_ should stay unchanged ... as WE_..._End)
     }

@@ -103,7 +103,7 @@ public class NetworkArray {
     }
 
     public class NullClass {};
-    public static NullClass NULL;
+    public static NullClass NULL = new ();
     
     public void AddWithType<T>(T value) {
         if (typeof(T) == typeof(NullClass))
@@ -120,7 +120,7 @@ public class NetworkArray {
             throw new Exception("Unsupported type");
     }
     
-    private void AddWithTypeObject(NetworkDataType dataType, byte typeId, object obj) {
+    private void AddWithTypeObject(NetworkDataType dataType, byte typeId, object? obj) {
         Add(new DataWrapper(NetworkDataType.Byte,typeId));
         Add(new DataWrapper(dataType, obj));
     }

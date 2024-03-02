@@ -19,12 +19,8 @@ public class RacingRoom : Room {
         return new RacingRoom();
     }
 
-    public RacingRoom(string name = null, int? trackId = null) : base (name, "RacingDragon", true) {
-       if (trackId is null) {
-            TID = random.Next(105);
-        } else {
-            TID = (int)trackId;
-        }
+    public RacingRoom() : base (null, "RacingDragon", true) {
+        TID = random.Next(105);
 
         players = new();
         results = new();
@@ -66,6 +62,12 @@ public class RacingRoom : Room {
         public string userName;
         public string time;
         public string laps;
+
+        public Result(string userName, string time, string laps) {
+            this.userName = userName;
+            this.time = time;
+            this.laps = laps;
+        }
     }
 
     SortedDictionary<float, Result> results;
@@ -75,11 +77,7 @@ public class RacingRoom : Room {
         while (results.ContainsKey(timef))
             timef += 0.000001f;
 
-        results.Add(timef, new Result {
-            userName = userName,
-            time = time,
-            laps = laps
-        });
+        results.Add(timef, new Result(userName, time, laps));
     }
 
     public void SendResults() {
@@ -104,7 +102,7 @@ public class RacingRoom : Room {
 
     // start and countdown
 
-    System.Timers.Timer timer;
+    System.Timers.Timer? timer = null;
     int counter;
 
     private void SetTimer(double timeout, System.Timers.ElapsedEventHandler callback, bool AutoReset = false) {
@@ -124,7 +122,7 @@ public class RacingRoom : Room {
         SetTimer(0.2, SendJoin);
     }
 
-    private void SendJoin(Object source, ElapsedEventArgs e) {
+    private void SendJoin(Object? source, ElapsedEventArgs e) {
         foreach(var player in players) {
             Console.WriteLine($"Join Racing Room: {Name} RoomID: {Id} IID: {player.Key.ClientID}");
             player.Key.JoinRoom(this);
@@ -132,7 +130,7 @@ public class RacingRoom : Room {
         SetTimer(1, CountDown, true);
     }
 
-    private void CountDown(Object source, ElapsedEventArgs e) {
+    private void CountDown(Object? source, ElapsedEventArgs e) {
         if (!TryLoad()) {
             if (counter == 0) {
                 Load();
@@ -160,8 +158,8 @@ public class RacingRoom : Room {
     }
 
     public void Load() {
-        timer.Stop();
-        timer.Close();
+        timer!.Stop();
+        timer!.Close();
 
         // {"a":13,"c":1,"p":{"c":"","p":{"arr":["RA","","ST"]},"r":412467}}
         NetworkPacket packet = Utils.ArrNetworkPacket(new string[] {
@@ -216,6 +214,9 @@ public class RacingLobby {
     class Status {
         public string uid;
         public RacingPlayerState state = RacingPlayerState.NotReady;
+        public Status (string uid) {
+            this.uid = uid;
+        }
     }
 
     static object lobbyLock = new object();
@@ -225,7 +226,7 @@ public class RacingLobby {
     public static void SetPlayerState(Client client, RacingPlayerState state) {
         lock (lobbyLock) {
             if (!lobbyPlayers.ContainsKey(client)) {
-                lobbyPlayers[client] = new Status { uid = client.PlayerData.Uid };
+                lobbyPlayers[client] = new Status(client.PlayerData.Uid);
             }
             lobbyPlayers[client].state = state;
         }

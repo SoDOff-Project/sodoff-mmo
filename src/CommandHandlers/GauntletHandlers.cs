@@ -30,7 +30,7 @@ class GauntletJoinRoomHandler : ICommandHandler
 class GauntletPlayAgainHandler : ICommandHandler
 {
     public void Handle(Client client, NetworkObject receivedObject) {
-        GauntletRoom room = client.Room as GauntletRoom;
+        GauntletRoom room = (client.Room as GauntletRoom)!;
         room.SetPlayerReady(client, false);
 
         NetworkPacket packet = Utils.ArrNetworkPacket(new string[] {
@@ -52,7 +52,7 @@ class GauntletPlayAgainHandler : ICommandHandler
 class GauntletLobbyUserReadyHandler : ICommandHandler
 {
     public void Handle(Client client, NetworkObject receivedObject) {
-        GauntletRoom room = client.Room as GauntletRoom;
+        GauntletRoom room = (client.Room as GauntletRoom)!;
         room.SetPlayerReady(client);
 
         NetworkPacket packet = Utils.ArrNetworkPacket(new string[] {
@@ -84,7 +84,7 @@ class GauntletLobbyUserReadyHandler : ICommandHandler
 class GauntletLobbyUserNotReadyHandler : ICommandHandler
 {
     public void Handle(Client client, NetworkObject receivedObject) {
-        GauntletRoom room = client.Room as GauntletRoom;
+        GauntletRoom room = (client.Room as GauntletRoom)!;
         room.SetPlayerReady(client, false);
 
         NetworkPacket packet = Utils.ArrNetworkPacket(new string[] {
@@ -104,7 +104,7 @@ class GauntletLobbyUserNotReadyHandler : ICommandHandler
 class GauntletLevelLoadHandler : ICommandHandler
 {
     public void Handle(Client client, NetworkObject receivedObject) { // {"a":13,"c":1,"p":{"c":"gs.GLL","p":{"0":"0","1":"0","2":"5","en":"GauntletGameExtension"},"r":365587}}
-        GauntletRoom room = client.Room as GauntletRoom;
+        GauntletRoom room = (client.Room as GauntletRoom)!;
         NetworkObject p = receivedObject.Get<NetworkObject>("p");
         
         NetworkPacket packet = Utils.ArrNetworkPacket(new string[] {
@@ -125,12 +125,12 @@ class GauntletLevelLoadHandler : ICommandHandler
 [ExtensionCommandHandler("gs.GLLD")]
 class GauntletLevelLoadedHandler : ICommandHandler
 {
-    private System.Timers.Timer timer = null;
+    private System.Timers.Timer? timer = null;
     private int counter;
     private GauntletRoom room;
 
     public void Handle(Client client, NetworkObject receivedObject) {
-        room = client.Room as GauntletRoom;
+        room = (client.Room as GauntletRoom)!;
         counter = 5;
         
         // {"a":13,"c":1,"p":{"c":"msg","p":{"arr":["GCDS","365587","4"]},"r":365587}}
@@ -149,7 +149,7 @@ class GauntletLevelLoadedHandler : ICommandHandler
         timer.Elapsed += OnTick;
     }
 
-    private void OnTick(Object source, ElapsedEventArgs e) {
+    private void OnTick(Object? source, ElapsedEventArgs e) {
         NetworkPacket packet;
         if (--counter > 0) {
             // {"a":13,"c":1,"p":{"c":"msg","p":{"arr":["GCDS","365587","4"]},"r":365587}}
@@ -165,8 +165,8 @@ class GauntletLevelLoadedHandler : ICommandHandler
                 room.Id.ToString()
             }, "msg", room.Id);
             
-            timer.Stop();
-            timer.Close();
+            timer!.Stop();
+            timer!.Close();
             timer = null;
         }
         foreach (var roomClient in room.Clients) {
@@ -181,7 +181,7 @@ class GauntletRelayGameDataHandler : ICommandHandler
 {
     public void Handle(Client client, NetworkObject receivedObject) // {"a":13,"c":1,"p":{"c":"gs.RGD","p":{"0":"2700","1":"78","en":"GauntletGameExtension"},"r":4}}
     {
-        GauntletRoom room = client.Room as GauntletRoom;
+        GauntletRoom room = (client.Room as GauntletRoom)!;
         NetworkObject p = receivedObject.Get<NetworkObject>("p");
         
         // {"a":13,"c":1,"p":{"c":"msg","p":{"arr":["RGD","365587","150","75"]},"r":365587}}
@@ -204,7 +204,7 @@ class GauntletGameCompleteHandler : ICommandHandler
 {
     public void Handle(Client client, NetworkObject receivedObject) // {"a":13,"c":1,"p":{"c":"gs.GC","p":{"0":"1550","1":"84","en":"GauntletGameExtension"},"r":4}}
     {
-        GauntletRoom room = client.Room as GauntletRoom;
+        GauntletRoom room = (client.Room as GauntletRoom)!;
         NetworkObject p = receivedObject.Get<NetworkObject>("p");
         
         room.ProcessResult(client, p.Get<string>("0"), p.Get<string>("1"));
