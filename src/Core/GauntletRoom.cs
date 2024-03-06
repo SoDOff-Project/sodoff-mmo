@@ -3,16 +3,19 @@ using sodoffmmo.Data;
 
 namespace sodoffmmo.Core;
 public class GauntletRoom : Room {
+    static object NextRoomLock = new object();
     static GauntletRoom? NextRoom = null;
 
     public static GauntletRoom Get() {
-        if (NextRoom != null && NextRoom.ClientsCount == 1) {
-            var ret = NextRoom!;
-            NextRoom = null;
-            return ret;
-        } else {
-            NextRoom = new GauntletRoom();
-            return NextRoom!;
+        lock(NextRoomLock) {
+            if (NextRoom != null && NextRoom.ClientsCount == 1) {
+                var ret = NextRoom!;
+                NextRoom = null;
+                return ret;
+            } else {
+                NextRoom = new GauntletRoom();
+                return NextRoom!;
+            }
         }
     }
 

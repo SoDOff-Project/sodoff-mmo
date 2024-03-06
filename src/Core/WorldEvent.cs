@@ -10,15 +10,17 @@ class WorldEvent {
         NotActive
     }
     private static WorldEvent? _instance = null;
-    private object EventLock = new object();
+    private static object EventLock = new object();
     private Random random = new Random();
     private System.Timers.Timer? timer = null;
     
     public static WorldEvent Get() {
-        if (_instance == null) {
-            _instance = new WorldEvent();
+        lock(EventLock) {
+            if (_instance == null) {
+                _instance = new WorldEvent();
+            }
+            return _instance;
         }
-        return _instance;
     }
     
     private WorldEvent() {

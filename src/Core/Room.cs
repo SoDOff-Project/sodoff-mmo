@@ -4,6 +4,7 @@ using sodoffmmo.Data;
 namespace sodoffmmo.Core;
 public class Room {
     public static int MaxId { get; private set; } = 2;
+    static object RoomsListLock = new object();
     protected static Dictionary<string, Room> rooms = new();
 
     List<Client> clients = new();
@@ -70,9 +71,11 @@ public class Room {
     public static Room Get(string name) => rooms[name];
     
     public static Room GetOrAdd(string name) {
-        if (!Room.Exists(name))
-            return new Room(name);
-        return rooms[name];
+        lock(RoomsListLock) {
+            if (!Room.Exists(name))
+                return new Room(name);
+            return rooms[name];
+        }
     }
 
     public static Room[] AllRooms() {
