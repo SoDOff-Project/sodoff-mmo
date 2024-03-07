@@ -30,6 +30,7 @@ internal sealed class ServerConfiguration {
     public int FirstEventTimer { get; set; } = 10;
     public int RacingMaxPlayers { get; set; } = 6;
     public int RacingMinPlayers { get; set; } = 2;
+    public int RacingMainLobbyTimer { get; set; } = 15;
     public bool EnableChat { get; set; } = true;
     public bool AllowChaos { get; set; } = false;
 }

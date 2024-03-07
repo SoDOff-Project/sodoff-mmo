@@ -211,6 +211,39 @@ public class RacingRoom : Room {
 }
     
 public class RacingLobby {
+    static object lobbyLock = new object();
+    public readonly static RacingLobby Lobby = new RacingLobby();
+
+    private RacingLobby() {
+        timer = new System.Timers.Timer(1000);
+        timer.AutoReset = true;
+        timer.Enabled = true;
+        timer.Elapsed += CheckRacingRoomCountdown;
+    }
+
+    System.Timers.Timer timer;
+    int counter;
+
+    private void CheckRacingRoomCountdown(Object? source, System.Timers.ElapsedEventArgs e) {
+        lock (lobbyLock) {
+            int readyPlayersCount = GetPlayersCount(RacingPlayerState.Ready);
+            if (readyPlayersCount >= Configuration.ServerConfiguration.RacingMaxPlayers) {
+                SendToRacingRoom();
+                counter = -1;
+            } else if (readyPlayersCount >= Configuration.ServerConfiguration.RacingMinPlayers) {
+                if (counter < 0) {
+                    counter = Configuration.ServerConfiguration.RacingMainLobbyTimer;
+                }
+                if (--counter == 0) {
+                    SendToRacingRoom();
+                    counter = -1;
+                }
+            } else {
+                counter = -1;
+            }
+        }
+    }
+
     class Status {
         public string uid;
         public RacingPlayerState state = RacingPlayerState.NotReady;
@@ -219,11 +252,9 @@ public class RacingLobby {
         }
     }
 
-    static object lobbyLock = new object();
+    Dictionary<Client, Status> lobbyPlayers = new();
 
-    static Dictionary<Client, Status> lobbyPlayers = new();
-    
-    public static void SetPlayerState(Client client, RacingPlayerState state) {
+    public void SetPlayerState(Client client, RacingPlayerState state) {
         lock (lobbyLock) {
             if (!lobbyPlayers.ContainsKey(client)) {
                 lobbyPlayers[client] = new Status(client.PlayerData.Uid);
@@ -232,7 +263,7 @@ public class RacingLobby {
         }
     }
 
-    public static bool IsPlayerState(Client client, RacingPlayerState state) {
+    public bool IsPlayerState(Client client, RacingPlayerState state) {
         lock (lobbyLock) {
             if (lobbyPlayers.TryGetValue(client, out var info)) {
                 return info.state == state;
@@ -241,7 +272,7 @@ public class RacingLobby {
         }
     }
 
-    public static int GetPlayersCount(RacingPlayerState state) {
+    public int GetPlayersCount(RacingPlayerState state) {
         lock (lobbyLock) {
             int count = 0;
             foreach(var player in lobbyPlayers) {
@@ -251,8 +282,8 @@ public class RacingLobby {
         }
     }
 
-    public static bool SendToRacingRoom() {
-        lock (lobbyLock) {
+    private bool SendToRacingRoom() {
+        // lock (lobbyLock) {
             if (GetPlayersCount(RacingPlayerState.Ready) >= Configuration.ServerConfiguration.RacingMinPlayers) {
                 int i = 0;
                 RacingRoom room = RacingRoom.Get();
@@ -275,10 +306,10 @@ public class RacingLobby {
                 return true;
             }
             return false;
-        }
+        // }
     }
     
-    public static NetworkPacket GetPS() {
+    public NetworkPacket GetPS() {
         List<Client> toRemove = new();
         Room room = Room.Get("DragonRacingDO");
 

@@ -23,7 +23,7 @@ class RacingPlayerReadyHandler : ICommandHandler
             Console.WriteLine($"IMR Lobby: {client.ClientID} {ready}");
             room.TryLoad();
         } else {
-            RacingLobby.SetPlayerState(client, ready);
+            RacingLobby.Lobby.SetPlayerState(client, ready);
             Console.WriteLine($"IMR: {client.ClientID} {ready}");
         }
     }
@@ -34,8 +34,7 @@ class RacingPlayerReadyHandler : ICommandHandler
 class RacingPlayerStatusHandler : ICommandHandler
 {
     public void Handle(Client client, NetworkObject receivedObject) {
-        RacingLobby.SendToRacingRoom();
-        client.Send(RacingLobby.GetPS());
+        client.Send(RacingLobby.Lobby.GetPS());
     }
 }
 
