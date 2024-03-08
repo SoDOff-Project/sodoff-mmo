@@ -80,7 +80,7 @@ public class Client {
     }
 
     public void InvalidatePlayerData() {
-        PlayerData = new();
+        PlayerData.IsValid = false;
     }
 
     public void Disconnect() {

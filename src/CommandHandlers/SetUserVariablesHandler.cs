@@ -16,7 +16,7 @@ class SetUserVariablesHandler : ICommandHandler {
         uid = suvData.Get<string>("UID");
 
         // TODO
-        if (uid != null && client.PlayerData.Uid != uid)
+        if (uid != null && (client.PlayerData.Uid != uid || !client.PlayerData.IsValid))
             ProcessPlayerData();
         else
             UpdateVars();
@@ -45,8 +45,9 @@ class SetUserVariablesHandler : ICommandHandler {
         client.PlayerData.J = suvData.Get<string>("J");
         client.PlayerData.Bu = suvData.Get<string>("BU");
         client.PlayerData.Fp = suvData.Get<string>("FP");
+        client.PlayerData.IsValid = true;
 
-        Console.WriteLine($"SUV {client.Room.Name} IID: {client.ClientID}");
+        Console.WriteLine($"SUV {client.Room.Name} ({client.Room.ClientsCount}) IID: {client.ClientID} UID: {uid}");
 
         UpdatePlayersInRoom();
         SendSUVToPlayerInRoom();
@@ -55,8 +56,9 @@ class SetUserVariablesHandler : ICommandHandler {
     private void UpdateVars() {
         string? FP = suvData.Get<string>("FP");
         string? PU = suvData.Get<string>("PU");
+        string? A = suvData.Get<string>("A");
         string? L = suvData.Get<string>("L");
-        if (FP is null && PU is null && L is null) {
+        if (FP is null && PU is null && A is null && L is null) {
             return; // TODO
         }
         NetworkObject data = new();
@@ -73,6 +75,11 @@ class SetUserVariablesHandler : ICommandHandler {
             client.PlayerData.Pu = PU;
             data2.Add("PU", client.PlayerData.Pu);
             vl.Add(NetworkArray.Param("PU", client.PlayerData.Pu));
+        }
+        if (A != null) {
+            client.PlayerData.A = A;
+            data2.Add("A", client.PlayerData.A);
+            vl.Add(NetworkArray.Param("A", client.PlayerData.A));
         }
         if (L != null) {
             client.PlayerData.L = L;

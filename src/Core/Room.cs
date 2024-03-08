@@ -100,7 +100,8 @@ public class Room {
 
         NetworkArray userList = new();
         foreach (Client player in Clients) {
-            userList.Add(player.PlayerData.GetNetworkData(player.ClientID, out _));
+            if (player.PlayerData.Uid != "")
+                userList.Add(player.PlayerData.GetNetworkData(player.ClientID, out _));
         }
 
         obj.Add("r", roomInfo);
