@@ -9,11 +9,12 @@ public class Client {
 
     public int ClientID { get; private set; }
     public PlayerData PlayerData { get; set; } = new();
-    public Room Room { get; set; }
+    public Room Room { get; private set; }
 
     private readonly Socket socket;
     SocketBuffer socketBuffer = new();
     private volatile bool scheduledDisconnect = false;
+    private object ClientLock = new();
 
     public Client(Socket clientSocket) {
         socket = clientSocket;
@@ -60,10 +61,12 @@ public class Client {
     }
     
     public void JoinRoom(Room room) {
-        LeaveRoom();
-        InvalidatePlayerData();
-        Room = room;
-        Room.AddClient(this);
+        lock(ClientLock) {
+            LeaveRoom();
+            PlayerData.IsValid = false;
+            Room.AddClient(this);
+            Room = room;
+        }
         Send(Room.SubscribeRoom());
         UpdatePlayerUserVariables();
     }
@@ -77,10 +80,6 @@ public class Client {
             cmd.Add("p", obj);
             Send(NetworkObject.WrapObject(1, 13, cmd).Serialize());
         }
-    }
-
-    public void InvalidatePlayerData() {
-        PlayerData.IsValid = false;
     }
 
     public void Disconnect() {
