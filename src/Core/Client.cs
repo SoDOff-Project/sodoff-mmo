@@ -64,8 +64,8 @@ public class Client {
         lock(ClientLock) {
             LeaveRoom();
             PlayerData.IsValid = false;
-            Room.AddClient(this);
             Room = room;
+            Room.AddClient(this);
         }
         Send(Room.SubscribeRoom());
         UpdatePlayerUserVariables();
