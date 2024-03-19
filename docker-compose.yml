@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  sodoffmmo:
+    build:
+      context: .
+      dockerfile: src/Dockerfile
+    ports:
+      - "9933:9933"
+    networks:
+      - sodoff_network
+
+networks:
+  sodoff_network:
+    name: sodoff_network
+    # bellow network configuration should be put in at least one file
+    #  - but it may be in many or all
+    #  - without it it will work like `external: true`
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "172.16.99.0/24"
