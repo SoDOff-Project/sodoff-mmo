@@ -35,11 +35,7 @@ class ChatMessageHandler : ICommandHandler {
         cmd.Add("p", data);
 
         NetworkPacket packet = NetworkObject.WrapObject(1, 13, cmd).Serialize();
-        foreach (var roomClient in client.Room.Clients) {
-            if (roomClient != client) {
-                roomClient.Send(packet);
-            }
-        }
+        client.Room.Send(packet, client);
 
         cmd = new();
         data = new();

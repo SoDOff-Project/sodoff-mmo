@@ -8,7 +8,6 @@ namespace sodoffmmo.CommandHandlers;
 class GenericMessageHandler : ICommandHandler {
     public void Handle(Client client, NetworkObject receivedObject) {
         NetworkPacket packet = NetworkObject.WrapObject(0, 7, receivedObject).Serialize();
-        foreach (var roomClient in client.Room.Clients)
-            roomClient.Send(packet);
+        client.Room.Send(packet);
     }
 }

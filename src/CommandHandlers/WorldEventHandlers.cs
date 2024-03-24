@@ -37,9 +37,7 @@ class WorldEventHealthHandler : ICommandHandler {
                 health.ToString("0.0#####", CultureInfo.GetCultureInfo("en-US")) + "," + DateTime.UtcNow.ToString("ddd MMM dd HH:mm:ss UTC yyyy", CultureInfo.GetCultureInfo("en-US")),
                 WorldEvent.Get().GetRoom().Id
             );
-            foreach (var roomClient in WorldEvent.Get().GetRoom().Clients) {
-                roomClient.Send(packet);
-            }
+            WorldEvent.Get().GetRoom().Send(packet);
         }
     }
 }
@@ -59,9 +57,7 @@ class WorldEventFlareHandler : ICommandHandler {
             p.Get<string>("oh") + "," + p.Get<string>("ts"),
             WorldEvent.Get().GetRoom().Id
         );
-        foreach (var roomClient in WorldEvent.Get().GetRoom().Clients) {
-            roomClient.Send(packet);
-        }
+        WorldEvent.Get().GetRoom().Send(packet);
     }
 }
 
@@ -82,9 +78,7 @@ class WorldEventMissileHandler : ICommandHandler {
             p.Get<string>("tID"),
             p.Get<string>("objID")
         });
-        foreach (var roomClient in WorldEvent.Get().GetRoom().Clients) {
-            roomClient.Send(packet);
-        }
+        WorldEvent.Get().GetRoom().Send(packet);
     }
 }
 

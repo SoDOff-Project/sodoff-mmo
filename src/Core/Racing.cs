@@ -94,9 +94,7 @@ public class RacingRoom : Room {
             }
 
             NetworkPacket packet = Utils.ArrNetworkPacket(info.ToArray(), "", Id);
-            foreach (var roomClient in Clients) {
-                roomClient.Send(packet);
-            }
+            Send(packet);
         }
     }
 
@@ -124,8 +122,7 @@ public class RacingRoom : Room {
 
     private void SendJoin(Object? source, ElapsedEventArgs e) {
         foreach(var player in players) {
-            Console.WriteLine($"Join Racing Room: {Name} RoomID: {Id} IID: {player.Key.ClientID}");
-            player.Key.JoinRoom(this);
+            player.Key.SetRoom(this);
         }
         SetTimer(1, CountDown, true);
     }
@@ -142,9 +139,7 @@ public class RacingRoom : Room {
                     "LT",
                     (--counter).ToString()
                 }, "", Id);
-                foreach (var roomClient in Clients) {
-                    roomClient.Send(packet);
-                }
+                Send(packet);
             }
         }
     }
@@ -167,9 +162,7 @@ public class RacingRoom : Room {
             "",
             "ST"
         }, "", Id);
-        foreach (var roomClient in Clients) {
-            roomClient.Send(packet);
-        }
+        Send(packet);
     }
 
     // TODO StratTimer → kick out to main lobby players without RacingPlayerState.RaceReady1 after timeout, next kick out players without RacingPlayerState.RaceReady2 after timeout2

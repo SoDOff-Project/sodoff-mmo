@@ -1,6 +1,7 @@
 ﻿using sodoffmmo.Data;
 using System;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 
 namespace sodoffmmo.Core;
 public class Client {
@@ -9,12 +10,12 @@ public class Client {
 
     public int ClientID { get; private set; }
     public PlayerData PlayerData { get; set; } = new();
-    public Room Room { get; private set; }
+    public Room? Room { get; private set; }
 
     private readonly Socket socket;
     SocketBuffer socketBuffer = new();
     private volatile bool scheduledDisconnect = false;
-    private object ClientLock = new();
+    private readonly object clientLock = new();
 
     public Client(Socket clientSocket) {
         socket = clientSocket;
@@ -39,36 +40,36 @@ public class Client {
         try {
             socket.Send(packet.SendData);
         } catch (SocketException) {
-            LeaveRoom();
             SheduleDisconnect();
         }
     }
 
-    public void LeaveRoom() {
-        if (Room != null) {
-            Console.WriteLine($"Leave room {Room.Name} IID: {ClientID}");
-            Room.RemoveClient(this);
-            NetworkObject data = new();
-            data.Add("r", Room.Id);
-            data.Add("u", ClientID);
-
-            NetworkPacket packet = NetworkObject.WrapObject(0, 1004, data).Serialize();
-            foreach (var roomClient in Room.Clients) {
-                roomClient.Send(packet);
-            }
-            Room = null;
-        }
-    }
-    
-    public void JoinRoom(Room room) {
-        lock(ClientLock) {
-            LeaveRoom();
+    public void SetRoom(Room? room) {
+        lock(clientLock) {
+            // set variable player data as not valid, but do not reset all player data
             PlayerData.IsValid = false;
+
+            if (Room != null) {
+                Console.WriteLine($"Leave room: {Room.Name} (id={Room.Id}, size={Room.ClientsCount}) IID: {ClientID}");
+                Room.RemoveClient(this);
+
+                NetworkObject data = new();
+                data.Add("r", Room.Id);
+                data.Add("u", ClientID);
+                Room.Send(NetworkObject.WrapObject(0, 1004, data).Serialize());
+            }
+
+            // set new room (null when SetRoom is used as LeaveRoom)
             Room = room;
-            Room.AddClient(this);
+
+            if (Room != null) {
+                Console.WriteLine($"Join room: {Room.Name} RoomID (id={Room.Id}, size={Room.ClientsCount}) IID: {ClientID}");
+                Room.AddClient(this);
+
+                Send(Room.SubscribeRoom());
+                UpdatePlayerUserVariables();
+            }
         }
-        Send(Room.SubscribeRoom());
-        UpdatePlayerUserVariables();
     }
 
     private void UpdatePlayerUserVariables() {
@@ -91,6 +92,12 @@ public class Client {
     }
 
     public void SheduleDisconnect() {
+        if (Room != null) {
+            // quiet remove from room (to avoid issues in Room.Send)
+            //  - do not change Room value here
+            //  - full remove will be will take place Server.HandleClient (before real disconnected)
+            Room.RemoveClient(this);
+        }
         scheduledDisconnect = true;
     }
 

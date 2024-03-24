@@ -160,9 +160,7 @@ class WorldEvent {
                 lastResults,
                 room.Id
             );
-            foreach (var roomClient in room.Clients) {
-                roomClient.Send(packet);
-            }
+            room.Send(packet);
             
             NetworkArray vl = new();
             vl.Add(NetworkArray.VlElement("WE__AI", NetworkArray.NULL));
@@ -171,9 +169,7 @@ class WorldEvent {
                 vl.Add(NetworkArray.VlElement("WEF_" + t.Key, NetworkArray.NULL));
             }
             packet = Utils.VlNetworkPacket(vl, room.Id);
-            foreach (var roomClient in room.Clients) {
-                roomClient.Send(packet);
-            }
+            room.Send(packet);
             
             Console.WriteLine($"Event {uid} sent _End");
             
@@ -206,9 +202,7 @@ class WorldEvent {
         Console.WriteLine($"Event {uid} send event notification (WE_ = {(WE ? startTimeString : WE)}  WEN_ = {(WEN ? nextStartTimeString : WEN)}, room = {room.Id}) to all clients");
         NetworkPacket packet = Utils.VlNetworkPacket(EventInfoArray(WE, WEN), room.Id);
         foreach (var r in Room.AllRooms()) {
-            foreach (var roomClient in r.Clients) {
-                roomClient.Send(packet);
-            }
+            r.Send(packet);
         }
     }
     

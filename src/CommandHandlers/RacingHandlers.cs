@@ -58,9 +58,7 @@ class RacingARACKHandler : ICommandHandler
 
         if (room.GetPlayersCount(RacingPlayerState.RaceReady2) == room.ClientsCount) {
             NetworkPacket packet = room.GetSTAPacket();
-            foreach (var roomClient in room.Clients) {
-                roomClient.Send(packet);
-            }
+            room.Send(packet);
             Console.WriteLine($"STA");
         }
     }

@@ -11,6 +11,12 @@ class SetUserVariablesHandler : ICommandHandler {
     Client client;
     string? uid;
     public void Handle(Client client, NetworkObject receivedObject) {
+        if (client.Room == null) {
+            Console.WriteLine($"SUV Missing Room IID: {client.ClientID}");
+            client.Send(NetworkObject.WrapObject(0, 1006, new NetworkObject()).Serialize());
+            client.SheduleDisconnect();
+            return;
+        }
         this.client = client;
         suvData = receivedObject.Get<NetworkObject>("p");
         uid = suvData.Get<string>("UID");
@@ -90,8 +96,7 @@ class SetUserVariablesHandler : ICommandHandler {
         data.Add("vl", vl);
 
         NetworkPacket packet = NetworkObject.WrapObject(0, 12, data).Serialize();
-        foreach (var roomClient in client.Room.Clients)
-            roomClient.Send(packet);
+        client.Room.Send(packet);
 
         NetworkObject cmd = new();
         cmd.Add("c", "SUV");
@@ -105,10 +110,7 @@ class SetUserVariablesHandler : ICommandHandler {
         container.Add("arr", arr);
         cmd.Add("p", container);
         packet = NetworkObject.WrapObject(1, 13, cmd).Serialize();
-        foreach (var roomClient in client.Room.Clients) {
-            if (roomClient != client)
-                roomClient.Send(packet);
-        }
+        client.Room.Send(packet, client);
     }
 
     private void UpdatePlayersInRoom() {
@@ -129,10 +131,7 @@ class SetUserVariablesHandler : ICommandHandler {
         NetworkPacket packet = NetworkObject.WrapObject(0, 1000, data).Serialize();
         packet.Compress();
 
-        foreach (var roomClient in client.Room.Clients) {
-            if (roomClient != client)
-                roomClient.Send(packet);
-        }
+        client.Room.Send(packet, client);
     }
 
     private void SendSUVToPlayerInRoom() {
@@ -144,9 +143,6 @@ class SetUserVariablesHandler : ICommandHandler {
         cmd.Add("p", obj);
 
         NetworkPacket packet = NetworkObject.WrapObject(1, 13, cmd).Serialize();
-        foreach (var roomClient in client.Room.Clients) {
-            if (roomClient != client)
-                roomClient.Send(packet);
-        }
+        client.Room.Send(packet, client);
     }
 }

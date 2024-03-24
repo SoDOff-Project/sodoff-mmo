@@ -7,6 +7,6 @@ namespace sodoffmmo.CommandHandlers;
 [CommandHandler(26)]
 class ExitHandler : ICommandHandler {
     public void Handle(Client client, NetworkObject receivedObject) {
-        client.LeaveRoom();
+        client.SetRoom(null);
     }
 }

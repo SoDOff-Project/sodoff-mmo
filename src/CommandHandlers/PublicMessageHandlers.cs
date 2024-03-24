@@ -24,8 +24,6 @@ class RacingPMHandler : ICommandHandler
         cmd.Add("p", p);
         NetworkPacket packet = NetworkObject.WrapObject(1, 13, cmd).Serialize();
 
-        foreach (var roomClient in client.Room.Clients) {
-            roomClient.Send(packet);
-        }
+        client.Room.Send(packet);
     }
 }

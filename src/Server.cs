@@ -53,7 +53,7 @@ public class Server {
             }
         } finally {
             try {
-                client.LeaveRoom();
+                client.SetRoom(null);
             } catch (Exception) { }
             client.Disconnect();
             Console.WriteLine("Socket disconnected IID: " + client.ClientID);

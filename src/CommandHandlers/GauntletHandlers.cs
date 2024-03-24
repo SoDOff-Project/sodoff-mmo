@@ -39,10 +39,7 @@ class GauntletPlayAgainHandler : ICommandHandler
             client.PlayerData.Uid
         }, "msg", room.Id);
 
-        foreach (var roomClient in room.Clients) {
-            if (roomClient != client)
-                roomClient.Send(packet);
-        }
+        room.Send(packet, client);
         room.SendPA(client);
     }
 }
@@ -61,9 +58,7 @@ class GauntletLobbyUserReadyHandler : ICommandHandler
             client.PlayerData.Uid
         }, "msg", room.Id);
 
-        foreach (var roomClient in room.Clients) {
-            roomClient.Send(packet);
-        }
+        room.Send(packet);
 
         if (room.GetReadyCount() > 1) {
             packet = Utils.ArrNetworkPacket(new string[] {
@@ -72,9 +67,7 @@ class GauntletLobbyUserReadyHandler : ICommandHandler
                 client.PlayerData.Uid
             }, "msg", room.Id);
             
-            foreach (var roomClient in room.Clients) {
-                roomClient.Send(packet);
-            }
+            room.Send(packet);
         }
     }
 }
@@ -93,9 +86,7 @@ class GauntletLobbyUserNotReadyHandler : ICommandHandler
             client.PlayerData.Uid
         }, "msg", room.Id);
 
-        foreach (var roomClient in room.Clients) {
-            roomClient.Send(packet);
-        }
+        room.Send(packet);
     }
 }
 
@@ -114,10 +105,7 @@ class GauntletLevelLoadHandler : ICommandHandler
             p.Get<string>("1"),
             p.Get<string>("2") // TODO use size of p.fields - 1
         }, "msg", room.Id);
-        foreach (var roomClient in room.Clients) {
-                roomClient.Send(packet);
-        }
-
+        room.Send(packet);
     }
 }
 
@@ -139,9 +127,7 @@ class GauntletLevelLoadedHandler : ICommandHandler
             room.Id.ToString(),
             (--counter).ToString()
         }, "msg", room.Id);
-        foreach (var roomClient in room.Clients) {
-                roomClient.Send(packet);
-        }
+        room.Send(packet);
         
         timer = new System.Timers.Timer(1500);
         timer.AutoReset = true;
@@ -169,9 +155,7 @@ class GauntletLevelLoadedHandler : ICommandHandler
             timer!.Close();
             timer = null;
         }
-        foreach (var roomClient in room.Clients) {
-            roomClient.Send(packet);
-        }
+        room.Send(packet);
     }
 }
 
@@ -191,10 +175,7 @@ class GauntletRelayGameDataHandler : ICommandHandler
             p.Get<string>("0"),
             p.Get<string>("1")
         }, "msg", room.Id);
-        foreach (var roomClient in room.Clients) {
-            if (roomClient != client)
-                roomClient.Send(packet);
-        }
+        room.Send(packet, client);
     }
 }
 

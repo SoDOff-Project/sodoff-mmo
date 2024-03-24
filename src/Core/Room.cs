@@ -66,6 +66,14 @@ public class Room {
         }
     }
 
+    public void Send(NetworkPacket packet, Client? skip = null) {
+        foreach (var roomClient in clients) {
+            if (roomClient != skip) {
+                roomClient.Send(packet);
+            }
+        }
+    }
+
     public static bool Exists(string name) => rooms.ContainsKey(name);
 
     public static Room Get(string name) => rooms[name];
@@ -99,7 +107,7 @@ public class Room {
         roomInfo.Add((short)0); // max spectator count
 
         NetworkArray userList = new();
-        foreach (Client player in Clients) {
+        foreach (Client player in clients) {
             if (player.PlayerData.Uid != "")
                 userList.Add(player.PlayerData.GetNetworkData(player.ClientID, out _));
         }

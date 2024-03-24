@@ -59,11 +59,7 @@ class SetPositionVariablesHandler : ICommandHandler {
         cmd.Add("c", "SPV");
         cmd.Add("p", obj);
 
-
         NetworkPacket packet = NetworkObject.WrapObject(1, 13, cmd).Serialize();
-        foreach (var roomClient in client.Room.Clients) {
-            if (roomClient != client)
-                roomClient.Send(packet);
-        }
+        client.Room.Send(packet, client);
     }
 }

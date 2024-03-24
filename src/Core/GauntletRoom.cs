@@ -65,9 +65,7 @@ public class GauntletRoom : Room {
         }
         NetworkPacket packet = Utils.ArrNetworkPacket(info.ToArray(), "msg", base.Id);
 
-        foreach(var player in players) {
-            player.Key.Send(packet);
-        }
+        Send(packet);
     }
 
     public void SendPA(Client client) {
@@ -112,10 +110,7 @@ public class GauntletRoom : Room {
             }
             NetworkPacket packet = Utils.ArrNetworkPacket(info.ToArray(), "msg", base.Id);
 
-            foreach(var player in players) {
-                player.Key.Send(packet);
-            }
-
+            Send(packet);
             return true;
         }
     }
@@ -127,8 +122,8 @@ public class GauntletRoom : Room {
             if (room is null)
                 room = GauntletRoom.Get();
 
-            room.AddPlayer(client); // must be call before JoinRoom (before InvalidatePlayerData) - we need uid
-            client.JoinRoom(room);
+            client.SetRoom(room);
+            room.AddPlayer(client); // client will be not removed from GauntletRoom.players ... after remove all client from room whole GauntletRoom.players will be removed
             room.SendUJR();
         }
     }
