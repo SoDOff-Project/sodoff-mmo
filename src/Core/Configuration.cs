@@ -15,7 +15,7 @@ internal static class Configuration {
             .AddJsonFile("appsettings.json", true)
             .Build();
 
-        ServerConfiguration? serverConfiguration = config.GetSection("ServerConfiguration").Get<ServerConfiguration>();
+        ServerConfiguration? serverConfiguration = config.GetSection("MMOServer").Get<ServerConfiguration>();
         if (serverConfiguration is null)
             return;
 
