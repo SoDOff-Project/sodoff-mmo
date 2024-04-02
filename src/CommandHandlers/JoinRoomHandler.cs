@@ -5,12 +5,13 @@ using sodoffmmo.Data;
 namespace sodoffmmo.CommandHandlers;
 
 [ExtensionCommandHandler("JA")]
-class JoinRoomHandler : ICommandHandler
+class JoinRoomHandler : CommandHandler
 {
-    public void Handle(Client client, NetworkObject receivedObject)
+    public override Task Handle(Client client, NetworkObject receivedObject)
     {
         string roomName = receivedObject.Get<NetworkObject>("p").Get<string>("rn");
         Room room = Room.GetOrAdd(roomName);
         client.SetRoom(room);
+        return Task.CompletedTask;
     }
 }

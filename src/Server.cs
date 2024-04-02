@@ -49,7 +49,7 @@ public class Server {
                 while (client.TryGetNextPacket(out NetworkPacket packet))
                     networkObjects.Add(packet.GetObject());
 
-                HandleObjects(networkObjects, client);
+                await HandleObjects(networkObjects, client);
             }
         } finally {
             try {
@@ -60,18 +60,20 @@ public class Server {
         }
     }
 
-    private void HandleObjects(List<NetworkObject> networkObjects, Client client) {
+    private async Task HandleObjects(List<NetworkObject> networkObjects, Client client) {
         foreach (var obj in networkObjects) {
             try {
                 short commandId = obj.Get<short>("a");
-                ICommandHandler handler;
+                CommandHandler handler;
                 if (commandId != 13) {
                     if (commandId == 0 || commandId == 1)
                         Console.WriteLine($"System command: {commandId} IID: {client.ClientID}");
                     handler = moduleManager.GetCommandHandler(commandId);
                 } else
                     handler = moduleManager.GetCommandHandler(obj.Get<NetworkObject>("p").Get<string>("c"));
-                handler.Handle(client, obj.Get<NetworkObject>("p"));
+                Task task = handler.Handle(client, obj.Get<NetworkObject>("p"));
+                if (!handler.RunInBackground)
+                    await task;
             } catch (Exception ex) {
                 Console.WriteLine($"Exception IID: {client.ClientID} - {ex}");
             }

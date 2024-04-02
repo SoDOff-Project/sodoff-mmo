@@ -6,16 +6,16 @@ using System.Globalization;
 namespace sodoffmmo.CommandHandlers;
 
 [ExtensionCommandHandler("SUV")]
-class SetUserVariablesHandler : ICommandHandler {
+class SetUserVariablesHandler : CommandHandler {
     NetworkObject suvData;
     Client client;
     string? uid;
-    public void Handle(Client client, NetworkObject receivedObject) {
+    public override Task Handle(Client client, NetworkObject receivedObject) {
         if (client.Room == null) {
             Console.WriteLine($"SUV Missing Room IID: {client.ClientID}");
             client.Send(NetworkObject.WrapObject(0, 1006, new NetworkObject()).Serialize());
             client.ScheduleDisconnect();
-            return;
+            return Task.CompletedTask;
         }
         this.client = client;
         suvData = receivedObject.Get<NetworkObject>("p");
@@ -27,6 +27,7 @@ class SetUserVariablesHandler : ICommandHandler {
         else
             UpdateVars();
         
+        return Task.CompletedTask;
     }
 
     private void ProcessPlayerData() {

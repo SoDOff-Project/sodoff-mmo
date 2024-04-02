@@ -34,6 +34,7 @@ internal sealed class ServerConfiguration {
     public int RacingMaxPlayers { get; set; } = 6;
     public int RacingMinPlayers { get; set; } = 2;
     public int RacingMainLobbyTimer { get; set; } = 15;
+    public int PingDelay { get; set; } = 17;
     public bool EnableChat { get; set; } = true;
     public bool AllowChaos { get; set; } = false;
     public bool Authentication { get; set; } = false;

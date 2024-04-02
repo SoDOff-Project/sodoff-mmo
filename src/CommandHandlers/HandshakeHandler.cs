@@ -7,14 +7,14 @@ using System;
 namespace sodoffmmo.CommandHandlers;
 
 [CommandHandler(0)]
-class HandshakeHandler : ICommandHandler
+class HandshakeHandler : CommandHandler
 {
-    public void Handle(Client client, NetworkObject receivedObject)
+    public override Task Handle(Client client, NetworkObject receivedObject)
     {
         string? token = receivedObject.Get<string>("rt");
         if (token != null) {
             client.Send(NetworkObject.WrapObject(0, 1006, new NetworkObject()).Serialize());
-            return;
+            return Task.CompletedTask;
         }
 
         NetworkObject obj = new();
@@ -24,6 +24,7 @@ class HandshakeHandler : ICommandHandler
         obj.Add("ms", 1000000);
 
         client.Send(NetworkObject.WrapObject(0, 0, obj).Serialize());
+        return Task.CompletedTask;
     }
 
     private string RandomString(int length) {

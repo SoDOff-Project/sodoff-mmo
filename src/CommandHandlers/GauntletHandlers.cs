@@ -9,27 +9,29 @@ namespace sodoffmmo.CommandHandlers;
 
 // Host Room For Any
 [ExtensionCommandHandler("gs.HRFA")]
-class GauntletCreateRoomHandler : ICommandHandler
+class GauntletCreateRoomHandler : CommandHandler
 {
-    public void Handle(Client client, NetworkObject receivedObject) {
+    public override Task Handle(Client client, NetworkObject receivedObject) {
         GauntletRoom.Join(client);
+        return Task.CompletedTask;
     }
 }
 
 // Join Any Room
 [ExtensionCommandHandler("gs.JAR")]
-class GauntletJoinRoomHandler : ICommandHandler
+class GauntletJoinRoomHandler : CommandHandler
 {
-    public void Handle(Client client, NetworkObject receivedObject) {
+    public override Task Handle(Client client, NetworkObject receivedObject) {
         GauntletRoom.Join(client);
+        return Task.CompletedTask;
     }
 }
 
 // Play Again
 [ExtensionCommandHandler("gs.PA")]
-class GauntletPlayAgainHandler : ICommandHandler
+class GauntletPlayAgainHandler : CommandHandler
 {
-    public void Handle(Client client, NetworkObject receivedObject) {
+    public override Task Handle(Client client, NetworkObject receivedObject) {
         GauntletRoom room = (client.Room as GauntletRoom)!;
         room.SetPlayerReady(client, false);
 
@@ -41,14 +43,15 @@ class GauntletPlayAgainHandler : ICommandHandler
 
         room.Send(packet, client);
         room.SendPA(client);
+        return Task.CompletedTask;
     }
 }
 
 // Lobby User Ready
 [ExtensionCommandHandler("gs.LUR")]
-class GauntletLobbyUserReadyHandler : ICommandHandler
+class GauntletLobbyUserReadyHandler : CommandHandler
 {
-    public void Handle(Client client, NetworkObject receivedObject) {
+    public override Task Handle(Client client, NetworkObject receivedObject) {
         GauntletRoom room = (client.Room as GauntletRoom)!;
         room.SetPlayerReady(client);
 
@@ -69,14 +72,15 @@ class GauntletLobbyUserReadyHandler : ICommandHandler
             
             room.Send(packet);
         }
+        return Task.CompletedTask;
     }
 }
 
 // Lobby User Not Ready
 [ExtensionCommandHandler("gs.LUNR")]
-class GauntletLobbyUserNotReadyHandler : ICommandHandler
+class GauntletLobbyUserNotReadyHandler : CommandHandler
 {
-    public void Handle(Client client, NetworkObject receivedObject) {
+    public override Task Handle(Client client, NetworkObject receivedObject) {
         GauntletRoom room = (client.Room as GauntletRoom)!;
         room.SetPlayerReady(client, false);
 
@@ -87,14 +91,15 @@ class GauntletLobbyUserNotReadyHandler : ICommandHandler
         }, "msg", room.Id);
 
         room.Send(packet);
+        return Task.CompletedTask;
     }
 }
 
 // Game Level Load
 [ExtensionCommandHandler("gs.GLL")]
-class GauntletLevelLoadHandler : ICommandHandler
+class GauntletLevelLoadHandler : CommandHandler
 {
-    public void Handle(Client client, NetworkObject receivedObject) { // {"a":13,"c":1,"p":{"c":"gs.GLL","p":{"0":"0","1":"0","2":"5","en":"GauntletGameExtension"},"r":365587}}
+    public override Task Handle(Client client, NetworkObject receivedObject) { // {"a":13,"c":1,"p":{"c":"gs.GLL","p":{"0":"0","1":"0","2":"5","en":"GauntletGameExtension"},"r":365587}}
         GauntletRoom room = (client.Room as GauntletRoom)!;
         NetworkObject p = receivedObject.Get<NetworkObject>("p");
         
@@ -106,18 +111,19 @@ class GauntletLevelLoadHandler : ICommandHandler
             p.Get<string>("2") // TODO use size of p.fields - 1
         }, "msg", room.Id);
         room.Send(packet);
+        return Task.CompletedTask;
     }
 }
 
 // Game Level Loaded
 [ExtensionCommandHandler("gs.GLLD")]
-class GauntletLevelLoadedHandler : ICommandHandler
+class GauntletLevelLoadedHandler : CommandHandler
 {
     private System.Timers.Timer? timer = null;
     private int counter;
     private GauntletRoom room;
 
-    public void Handle(Client client, NetworkObject receivedObject) {
+    public override Task Handle(Client client, NetworkObject receivedObject) {
         room = (client.Room as GauntletRoom)!;
         counter = 5;
         
@@ -133,6 +139,7 @@ class GauntletLevelLoadedHandler : ICommandHandler
         timer.AutoReset = true;
         timer.Enabled = true;
         timer.Elapsed += OnTick;
+        return Task.CompletedTask;
     }
 
     private void OnTick(Object? source, ElapsedEventArgs e) {
@@ -161,9 +168,9 @@ class GauntletLevelLoadedHandler : ICommandHandler
 
 // Relay Game Data
 [ExtensionCommandHandler("gs.RGD")]
-class GauntletRelayGameDataHandler : ICommandHandler
+class GauntletRelayGameDataHandler : CommandHandler
 {
-    public void Handle(Client client, NetworkObject receivedObject) // {"a":13,"c":1,"p":{"c":"gs.RGD","p":{"0":"2700","1":"78","en":"GauntletGameExtension"},"r":4}}
+    public override Task Handle(Client client, NetworkObject receivedObject) // {"a":13,"c":1,"p":{"c":"gs.RGD","p":{"0":"2700","1":"78","en":"GauntletGameExtension"},"r":4}}
     {
         GauntletRoom room = (client.Room as GauntletRoom)!;
         NetworkObject p = receivedObject.Get<NetworkObject>("p");
@@ -176,19 +183,21 @@ class GauntletRelayGameDataHandler : ICommandHandler
             p.Get<string>("1")
         }, "msg", room.Id);
         room.Send(packet, client);
+        return Task.CompletedTask;
     }
 }
 
 // Game Complete
 [ExtensionCommandHandler("gs.GC")]
-class GauntletGameCompleteHandler : ICommandHandler
+class GauntletGameCompleteHandler : CommandHandler
 {
-    public void Handle(Client client, NetworkObject receivedObject) // {"a":13,"c":1,"p":{"c":"gs.GC","p":{"0":"1550","1":"84","en":"GauntletGameExtension"},"r":4}}
+    public override Task Handle(Client client, NetworkObject receivedObject) // {"a":13,"c":1,"p":{"c":"gs.GC","p":{"0":"1550","1":"84","en":"GauntletGameExtension"},"r":4}}
     {
         GauntletRoom room = (client.Room as GauntletRoom)!;
         NetworkObject p = receivedObject.Get<NetworkObject>("p");
         
         room.ProcessResult(client, p.Get<string>("0"), p.Get<string>("1"));
+        return Task.CompletedTask;
     }
 }
 

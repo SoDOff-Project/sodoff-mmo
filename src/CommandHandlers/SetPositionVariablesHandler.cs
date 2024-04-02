@@ -5,20 +5,22 @@ using sodoffmmo.Data;
 namespace sodoffmmo.CommandHandlers;
 
 [ExtensionCommandHandler("SPV")]
-class SetPositionVariablesHandler : ICommandHandler {
+class SetPositionVariablesHandler : CommandHandler {
     Client client;
     NetworkObject spvData;
-    public void Handle(Client client, NetworkObject receivedObject) {
+    public override Task Handle(Client client, NetworkObject receivedObject) {
         if (client.Room == null) {
             Console.WriteLine($"SPV Missing Room IID: {client.ClientID}");
             client.Send(NetworkObject.WrapObject(0, 1006, new NetworkObject()).Serialize());
             client.ScheduleDisconnect();
-            return;
+            return Task.CompletedTask;
         }
         this.client = client;
         spvData = receivedObject;
         UpdatePositionVariables();
         SendSPVCommand();
+        
+        return Task.CompletedTask;
     }
 
     private void UpdatePositionVariables() {

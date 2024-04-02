@@ -6,9 +6,9 @@ using sodoffmmo.Management;
 namespace sodoffmmo.CommandHandlers;
 
 [CommandHandler(1)]
-class LoginHandler : ICommandHandler
+class LoginHandler : CommandHandler
 {
-    public void Handle(Client client, NetworkObject receivedObject)
+    public override Task Handle(Client client, NetworkObject receivedObject)
     {
         client.PlayerData.UNToken = receivedObject.Get<string>("un");
         if (!ValidToken(client)) {
@@ -16,7 +16,7 @@ class LoginHandler : ICommandHandler
             obj.Add("dr", (byte)1);
             client.Send(NetworkObject.WrapObject(0, 1005, obj).Serialize());
             client.ScheduleDisconnect();
-            return;
+            return Task.CompletedTask;
         }
 
         NetworkArray rl = new();
@@ -68,6 +68,7 @@ class LoginHandler : ICommandHandler
         content.Add("pi", (short)1);
 
         client.Send(NetworkObject.WrapObject(0, 1, content).Serialize());
+        return Task.CompletedTask;
     }
 
     private bool ValidToken(Client client) {

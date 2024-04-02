@@ -5,13 +5,14 @@ using sodoffmmo.Data;
 namespace sodoffmmo.CommandHandlers;
 
 [ExtensionCommandHandler("SCM")]
-class ChatMessageHandler : ICommandHandler {
-    public void Handle(Client client, NetworkObject receivedObject) {
+class ChatMessageHandler : CommandHandler {
+    public override Task Handle(Client client, NetworkObject receivedObject) {
         if (!Configuration.ServerConfiguration.EnableChat) {
             ChatDisabled(client, receivedObject);
-            return;
+        } else {
+            Chat(client, receivedObject);
         }
-        Chat(client, receivedObject);
+        return Task.CompletedTask;
     }
 
     public void ChatDisabled(Client client, NetworkObject receivedObject) {

@@ -12,22 +12,22 @@ class ModuleManager {
         RegisterExtensionHandlers();
     }
 
-    public ICommandHandler GetCommandHandler(int id) {
+    public CommandHandler GetCommandHandler(int id) {
         if (handlers.TryGetValue(id, out Type? handler))
-            return (ICommandHandler)Activator.CreateInstance(handler)!;
+            return (CommandHandler)Activator.CreateInstance(handler)!;
         throw new Exception($"Command handler with ID {id} not found!");
     }
 
-    public ICommandHandler GetCommandHandler(string name) {
+    public CommandHandler GetCommandHandler(string name) {
         if (extHandlers.TryGetValue(name, out Type? handler))
-            return (ICommandHandler)Activator.CreateInstance(handler)!;
+            return (CommandHandler)Activator.CreateInstance(handler)!;
         throw new Exception($"Command handler with name \"{name}\" not found!");
     }
 
     private void RegisterHandlers() {
         handlers.Clear();
         var handlerTypes = Assembly.GetExecutingAssembly().GetTypes()
-                            .Where(type => typeof(ICommandHandler).IsAssignableFrom(type))
+                            .Where(type => typeof(CommandHandler).IsAssignableFrom(type))
                             .Where(type => type.GetCustomAttribute<CommandHandlerAttribute>() != null);
         
         foreach (var handlerType in handlerTypes) {
@@ -39,7 +39,7 @@ class ModuleManager {
     private void RegisterExtensionHandlers() {
         extHandlers.Clear();
         var extHandlerTypes = Assembly.GetExecutingAssembly().GetTypes()
-                                .Where(type => typeof(ICommandHandler).IsAssignableFrom(type))
+                                .Where(type => typeof(CommandHandler).IsAssignableFrom(type))
                                 .Where(type => type.GetCustomAttribute<ExtensionCommandHandlerAttribute>() != null);
 
         foreach (var extHandlerType in extHandlerTypes) {
