@@ -72,7 +72,7 @@ public class PlayerData {
         arr.Add((short)clientID);
 
         paramArr = new();
-        paramArr.Add(NetworkArray.Param("NT", (double)(Runtime.CurrentRuntime))); // network time
+        paramArr.Add(NetworkArray.Param("NT", (double)(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()))); // network time
         paramArr.Add(NetworkArray.Param("t", (int)(Runtime.CurrentRuntime / 1000))); // timestamp
 
         paramArr.Add(NetworkArray.Param("UID", Uid));

@@ -36,7 +36,7 @@ class SetUserVariablesHandler : ICommandHandler {
         client.PlayerData.M = suvData.Get<string>("M");
         client.PlayerData.L = suvData.Get<string>("L");
         client.PlayerData.Ra = suvData.Get<string>("RA");
-        string udt = suvData.Get<string>("UDT");
+        string? udt = suvData.Get<string>("UDT");
         if (udt != null)
             client.PlayerData.Udt = udt;
         client.PlayerData.P1 = double.Parse(suvData.Get<string>("P1"), CultureInfo.InvariantCulture);
@@ -46,7 +46,9 @@ class SetUserVariablesHandler : ICommandHandler {
         client.PlayerData.R2 = double.Parse(suvData.Get<string>("R2"), CultureInfo.InvariantCulture);
         client.PlayerData.R3 = double.Parse(suvData.Get<string>("R3"), CultureInfo.InvariantCulture);
         client.PlayerData.R = double.Parse(suvData.Get<string>("R"), CultureInfo.InvariantCulture);
-        client.PlayerData.Mbf = int.Parse(suvData.Get<string>("MBF"));
+        string? mbf = suvData.Get<string>("MBF");
+        if (mbf != null)
+            client.PlayerData.Mbf = int.Parse(mbf);
         client.PlayerData.F = int.Parse(suvData.Get<string>("F"));
         client.PlayerData.J = suvData.Get<string>("J");
         client.PlayerData.Bu = suvData.Get<string>("BU");

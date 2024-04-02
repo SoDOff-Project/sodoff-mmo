@@ -43,7 +43,7 @@ class SetPositionVariablesHandler : ICommandHandler {
         NetworkObject vars = new();
         vars.Add("MX", (float)client.PlayerData.Mx);
         vars.Add("ST", Runtime.CurrentRuntime);
-        vars.Add("NT", Runtime.CurrentRuntime.ToString());
+        vars.Add("NT", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString());
         vars.Add("t", (int)(Runtime.CurrentRuntime / 1000));
         vars.Add("F", client.PlayerData.F);
         vars.Add("MBF", client.PlayerData.Mbf);

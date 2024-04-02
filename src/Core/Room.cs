@@ -78,10 +78,10 @@ public class Room {
 
     public static Room Get(string name) => rooms[name];
     
-    public static Room GetOrAdd(string name) {
+    public static Room GetOrAdd(string name, bool autoRemove = false) {
         lock(RoomsListLock) {
             if (!Room.Exists(name))
-                return new Room(name);
+                return new Room(name, autoRemove: autoRemove);
             return rooms[name];
         }
     }
