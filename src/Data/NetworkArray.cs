@@ -114,6 +114,8 @@ public class NetworkArray {
             AddWithTypeObject(NetworkDataType.Int, 2, value);
         else if (typeof(T) == typeof(double))
             AddWithTypeObject(NetworkDataType.Double, 3, value);
+        else if (typeof(T) == typeof(float))
+            AddWithTypeObject(NetworkDataType.Float, 3, value);
         else if (typeof(T) == typeof(string))
             AddWithTypeObject(NetworkDataType.String, 4, value);
         else
@@ -121,7 +123,7 @@ public class NetworkArray {
     }
     
     private void AddWithTypeObject(NetworkDataType dataType, byte typeId, object? obj) {
-        Add(new DataWrapper(NetworkDataType.Byte,typeId));
+        Add(new DataWrapper(NetworkDataType.Byte, typeId));
         Add(new DataWrapper(dataType, obj));
     }
 

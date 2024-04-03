@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using System.Globalization;
 using sodoffmmo.Core;
 using sodoffmmo.Management;
 
@@ -10,56 +11,88 @@ public class PlayerData {
     public string Uid { get; set; } = "";
     // client token
     public string UNToken { get; set; } = "";
-    // avatar data
-    public string A { get; set; } = "";
-    // (not raised) pet data
-    public string Pu { get; set; } = "";
-    // raised pet data
-    public string Fp {
-        get {
-            return fp;
-        }
-        set {
-            fp = FixMountState(value);
-        }
-    }
-    private string fp = "";
 
     // rotation (eulerAngles.y)
-    public double R { get; set; }
+    public float R { get; set; }
     // velocity x
-    public double R1 { get; set; }
+    public float R1 { get; set; }
     // velocity y
-    public double R2 { get; set; }
+    public float R2 { get; set; }
     // velocity z
-    public double R3 { get; set; }
+    public float R3 { get; set; }
     // position x
-    public double P1 { get; set; }
+    public float P1 { get; set; }
     // position y
-    public double P2 { get; set; }
+    public float P2 { get; set; }
     // position z
-    public double P3 { get; set; }
-    // animation bitfield (animations used by avatar, e.g. mounted, swim, ...)
-    public int Mbf { get; set; }
+    public float P3 { get; set; }
     // max speed
-    public double Mx { get; set; } = 6;
+    public float Mx { get; set; } = 6;
     // flags (?)
     public int F { get; set; }
-    // location (level)
-    public string L { get; set; } = "";
+    // animation bitfield (animations used by avatar, e.g. mounted, swim, ...)
+    public int Mbf { get; set; }
 
-    // join allowed
-    public string J { get; set; } = "2";
-    // busy (?)
-    public string Bu { get; set; } = "False";
-    // UDT points
-    public string Udt { get; set; } = "";
-    // XP rank (points and level)
-    public string Ra { get; set; } = "";
-    // country info (for flag?)
-    public string Cu { get; set; } = "-1";
-    // membership status
-    public string M { get; set; } = "True";
+    public static readonly string[] SupportedVariables = {
+        "A",   // avatar data
+        "FP",  // raised pet data
+        "RA",  // XP rank (points and level)
+        "UDT", // UDT points
+        "L",   // location (level)
+        "PU",  // (not raised) pet data
+        "RDE", // ride (int)
+        "MU",  // mood
+        "MBR", // mount broom (bool)
+        "GU",  // goggles (bool)
+        "LC",  // livechat (int)
+        "CU",  // country id (int) (for flag?)
+        "J",   // join allowed
+        "BU",  // busy (?)
+        "M"    // membership status (bool)
+    };
+
+    // other variables (set and updated via SUV command)
+    private Dictionary<string, string?> variables = new();
+
+    public string GetVariable(string varName) {
+        return variables[varName];
+    }
+
+    public void SetVariable(string varName, string value) {
+        if (varName == "UID")
+            return;
+        if (varName == "FP")
+            value = FixMountState(value);
+        variables[varName] = value;
+    }
+
+    public void InitFromNetworkData(NetworkObject suvData) {
+        // set initial state for SPV data
+        R = float.Parse(suvData.Get<string>("R"), CultureInfo.InvariantCulture);
+        P1 = float.Parse(suvData.Get<string>("P1"), CultureInfo.InvariantCulture);
+        P2 = float.Parse(suvData.Get<string>("P2"), CultureInfo.InvariantCulture);
+        P3 = float.Parse(suvData.Get<string>("P3"), CultureInfo.InvariantCulture);
+        R1 = float.Parse(suvData.Get<string>("R1"), CultureInfo.InvariantCulture);
+        R2 = float.Parse(suvData.Get<string>("R2"), CultureInfo.InvariantCulture);
+        R3 = float.Parse(suvData.Get<string>("R3"), CultureInfo.InvariantCulture);
+        string? mbf = suvData.Get<string>("MBF");
+        if (mbf != null)
+            Mbf = int.Parse(mbf);
+        F = int.Parse(suvData.Get<string>("F"));
+
+        // reset all variables values
+        variables.Clear();
+
+        // set initial state for SUV data
+        foreach (string varName in SupportedVariables) {
+            string? value = suvData.Get<string>(varName);
+            if (value != null) {
+                SetVariable(varName, value);
+            }
+        }
+
+        IsValid = true;
+    }
 
     public string DiplayName { get; set; } = "";
     public Role Role { get; set; } = Role.User;
@@ -72,13 +105,12 @@ public class PlayerData {
         arr.Add((short)clientID);
 
         paramArr = new();
-        paramArr.Add(NetworkArray.Param("NT", (double)(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()))); // network time
-        paramArr.Add(NetworkArray.Param("t", (int)(Runtime.CurrentRuntime / 1000))); // timestamp
+        paramArr.Add(NetworkArray.Param("NT", (double)(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()))); // network time (like PNG)
+        paramArr.Add(NetworkArray.Param("t", (int)(Runtime.CurrentRuntime / 1000))); // timestamp (non-decreasing integer)
 
         paramArr.Add(NetworkArray.Param("UID", Uid));
-        paramArr.Add(NetworkArray.Param("A", A));
-        paramArr.Add(NetworkArray.Param("PU", Pu));
-        paramArr.Add(NetworkArray.Param("FP", Fp));
+        addVariableToArray(paramArr, "A");
+        addVariableToArray(paramArr, "FP");
 
         if (IsValid) {
             paramArr.Add(NetworkArray.Param("R", R));
@@ -91,18 +123,22 @@ public class PlayerData {
             paramArr.Add(NetworkArray.Param("MX", Mx));
             paramArr.Add(NetworkArray.Param("F", F));
             paramArr.Add(NetworkArray.Param("MBF", Mbf));
-            paramArr.Add(NetworkArray.Param("L", L));
-
-            paramArr.Add(NetworkArray.Param("J", J));
-            paramArr.Add(NetworkArray.Param("BU", Bu));
-            paramArr.Add(NetworkArray.Param("UDT", Udt));
-            paramArr.Add(NetworkArray.Param("RA", Ra));
-            paramArr.Add(NetworkArray.Param("CU", Cu));
-            paramArr.Add(NetworkArray.Param("M", M));
+            
+            foreach (var v in variables) {
+                if (v.Value is null || v.Key == "A" || v.Key == "FP")
+                    continue;
+                paramArr.Add(NetworkArray.Param(v.Key, v.Value));
+            }
         }
 
         arr.Add(paramArr);
         return arr;
+    }
+
+    private void addVariableToArray(NetworkArray paramArr, string varName) {
+        if (variables.TryGetValue (varName, out string tmp) && tmp != null) {
+            paramArr.Add(NetworkArray.Param(varName, tmp));
+        }
     }
 
     private string FixMountState(string value) {
