@@ -28,6 +28,7 @@ public class Server {
         if (IPv6AndIPv4)
             listener.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, 0);
         listener.Bind(new IPEndPoint(ipAddress, port));
+        new RoomWithAlert("LoungeInt"); // FIXME use config for this
         await Listen(listener);
     }
 
