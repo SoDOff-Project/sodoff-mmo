@@ -84,8 +84,13 @@ class WorldEvent {
             nextStartTime = DateTime.UtcNow.AddMinutes(minutes);
         else
             nextStartTime = startTime.AddMinutes(Configuration.ServerConfiguration.EventTimer);
-        nextStartTimeString = nextStartTime.ToString("MM/dd/yyyy HH:mm:ss");;
-        SetTimer((nextStartTime - DateTime.UtcNow).TotalSeconds - 120, PreInit);
+        nextStartTimeString = nextStartTime.ToString("MM/dd/yyyy HH:mm:ss");
+
+        double timeout = (nextStartTime - DateTime.UtcNow).TotalSeconds - 120;
+        if (timeout > 0)
+            SetTimer((nextStartTime - DateTime.UtcNow).TotalSeconds - 120, PreInit);
+        else
+            Console.WriteLine($"Events disabled");
     }
     
     // reset event and set timer to call PreEndEvent, send new WE_ info

@@ -17,9 +17,9 @@ class RacingPMHandler : CommandHandler
         data.Add("M", new string[] {
             receivedObject.Get<NetworkObject>("p").Get<string>("M")
         });
+        data.Add("MID", client.ClientID);
         arr.Add(data);
         p.Add("arr", arr);
-        p.Add("MID", client.ClientID);
         cmd.Add("c", "PM");
         cmd.Add("p", p);
         NetworkPacket packet = NetworkObject.WrapObject(1, 13, cmd).Serialize();

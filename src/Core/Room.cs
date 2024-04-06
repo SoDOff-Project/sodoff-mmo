@@ -38,7 +38,6 @@ public class Room {
 
     public IEnumerable<Client> Clients {
         get {
-            List<Client> list;
             roomLock.EnterReadLock();
             try {
                 return new List<Client>(clients);
