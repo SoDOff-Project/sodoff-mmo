@@ -4,8 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using sodoffmmo.Data;
+using System.Xml.Serialization;
 
 namespace sodoffmmo.Core;
 internal static class Utils {
@@ -32,5 +31,11 @@ internal static class Utils {
         if (roomID != null)
             ret.Add("r", (int)roomID);
         return ret.Serialize();
+    }
+
+    public static T DeserializeXml<T>(string xmlString) {
+        var serializer = new XmlSerializer(typeof(T));
+        using (var reader = new StringReader(xmlString))
+            return (T)serializer.Deserialize(reader);
     }
 }

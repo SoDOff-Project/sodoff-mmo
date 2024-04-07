@@ -20,6 +20,9 @@ internal static class Configuration {
             return;
 
         ServerConfiguration = serverConfiguration;
+        if (string.IsNullOrEmpty(ServerConfiguration.ApiUrl)) {
+            ServerConfiguration.Authentication = false;
+        }
     }
 }
 
@@ -33,4 +36,7 @@ internal sealed class ServerConfiguration {
     public int RacingMainLobbyTimer { get; set; } = 15;
     public bool EnableChat { get; set; } = true;
     public bool AllowChaos { get; set; } = false;
+    public bool Authentication { get; set; } = false;
+    public string ApiUrl { get; set; } = "";
+    public string BypassToken { get; set; } = "";
 }

@@ -40,7 +40,7 @@ public class Client {
         try {
             socket.Send(packet.SendData);
         } catch (SocketException) {
-            SheduleDisconnect();
+            ScheduleDisconnect();
         }
     }
 
@@ -91,7 +91,7 @@ public class Client {
         }
     }
 
-    public void SheduleDisconnect() {
+    public void ScheduleDisconnect() {
         if (Room != null) {
             // quiet remove from room (to avoid issues in Room.Send)
             //  - do not change Room value here

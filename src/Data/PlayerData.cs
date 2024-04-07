@@ -1,5 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 using sodoffmmo.Core;
+using sodoffmmo.Management;
 
 namespace sodoffmmo.Data;
 public class PlayerData {
@@ -59,6 +60,9 @@ public class PlayerData {
     public string Cu { get; set; } = "-1";
     // membership status
     public string M { get; set; } = "True";
+
+    public string DiplayName { get; set; } = "";
+    public Role Role { get; set; } = Role.User;
 
     public NetworkArray GetNetworkData(int clientID, out NetworkArray paramArr) {
         NetworkArray arr = new();

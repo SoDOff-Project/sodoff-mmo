@@ -14,7 +14,7 @@ class SetUserVariablesHandler : ICommandHandler {
         if (client.Room == null) {
             Console.WriteLine($"SUV Missing Room IID: {client.ClientID}");
             client.Send(NetworkObject.WrapObject(0, 1006, new NetworkObject()).Serialize());
-            client.SheduleDisconnect();
+            client.ScheduleDisconnect();
             return;
         }
         this.client = client;

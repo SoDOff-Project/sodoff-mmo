@@ -26,11 +26,13 @@ class ChatMessageHandler : ICommandHandler {
     }
 
     public void Chat(Client client, NetworkObject receivedObject) {
+        if (client.PlayerData.DiplayName == "")
+            return;
         string message = receivedObject.Get<NetworkObject>("p").Get<string>("chm");
 
         NetworkObject cmd = new();
         NetworkObject data = new();
-        data.Add("arr", new string[] { "CMR", "-1", client.PlayerData.Uid, "1", message, "", "1", "placeholder" });
+        data.Add("arr", new string[] { "CMR", "-1", client.PlayerData.Uid, "1", message, "", "1", client.PlayerData.DiplayName });
         cmd.Add("c", "CMR");
         cmd.Add("p", data);
 

@@ -1,6 +1,7 @@
 using sodoffmmo.Attributes;
 using sodoffmmo.Core;
 using sodoffmmo.Data;
+using sodoffmmo.Management;
 
 namespace sodoffmmo.CommandHandlers;
 
@@ -10,6 +11,14 @@ class LoginHandler : ICommandHandler
     public void Handle(Client client, NetworkObject receivedObject)
     {
         client.PlayerData.UNToken = receivedObject.Get<string>("un");
+        if (!ValidToken(client)) {
+            NetworkObject obj = new();
+            obj.Add("dr", (byte)1);
+            client.Send(NetworkObject.WrapObject(0, 1005, obj).Serialize());
+            client.ScheduleDisconnect();
+            return;
+        }
+
         NetworkArray rl = new();
 
         NetworkArray r1 = new();
@@ -59,5 +68,37 @@ class LoginHandler : ICommandHandler
         content.Add("pi", (short)1);
 
         client.Send(NetworkObject.WrapObject(0, 1, content).Serialize());
+    }
+
+    private bool ValidToken(Client client) {
+        if (!Configuration.ServerConfiguration.Authentication ||
+            (client.PlayerData.UNToken == Configuration.ServerConfiguration.BypassToken && !string.IsNullOrEmpty(Configuration.ServerConfiguration.BypassToken)))
+            return true;
+        try {
+            HttpClient httpClient = new();
+            var content = new FormUrlEncodedContent(
+                new Dictionary<string, string> {
+                    { "token", client.PlayerData.UNToken },
+            });
+
+            httpClient.Timeout = new TimeSpan(0, 0, 3);
+            var response = httpClient.PostAsync($"{Configuration.ServerConfiguration.ApiUrl}/Authentication/MMOAuthentication", content).Result;
+            string? responseString = response.Content.ReadAsStringAsync().Result;
+
+            if (response.StatusCode != System.Net.HttpStatusCode.OK)
+                return false;
+            if (responseString == null)
+                throw new Exception("Response string null");
+            Console.WriteLine(responseString);
+            AuthenticationInfo info = Utils.DeserializeXml<AuthenticationInfo>(responseString);
+            if (info.Authenticated) {
+                client.PlayerData.DiplayName = info.DisplayName;
+                client.PlayerData.Role = info.Role;
+                return true;
+            }
+        } catch (Exception ex) {
+            Console.WriteLine($"Authentication exception IID: {client.ClientID} - {ex}");
+        }
+        return false;
     }
 }
