@@ -69,7 +69,7 @@ public class Room {
     }
 
     public void Send(NetworkPacket packet, Client? skip = null) {
-        foreach (var roomClient in clients) {
+        foreach (var roomClient in Clients) {
             if (roomClient != skip) {
                 roomClient.Send(packet);
             }
