@@ -53,9 +53,9 @@ class SetPositionVariablesHandler : CommandHandler {
         if (ue != null)
             vars.Add("UE", ue);
         // pitch
-        string? cup = spvData.Get<string>("CUP");
+        float? cup = spvData.Get<float>("CUP");
         if (cup != null)
-            vars.Add("CUP", cup);
+            vars.Add("CUP", (float)cup);
 
         vars.Add("NT", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString());
         vars.Add("t", (int)(Runtime.CurrentRuntime / 1000));
