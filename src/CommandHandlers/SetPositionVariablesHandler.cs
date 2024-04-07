@@ -53,7 +53,7 @@ class SetPositionVariablesHandler : CommandHandler {
         if (ue != null)
             vars.Add("UE", ue);
         // pitch
-        float? cup = spvData.Get<float>("CUP");
+        float? cup = spvData.Get<float?>("CUP");
         if (cup != null)
             vars.Add("CUP", (float)cup);
 
