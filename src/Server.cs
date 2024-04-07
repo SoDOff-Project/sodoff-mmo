@@ -1,5 +1,6 @@
 ﻿using sodoffmmo.Core;
 using sodoffmmo.Data;
+using sodoffmmo.Management;
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -20,6 +21,7 @@ public class Server {
 
     public async Task Run() {
         moduleManager.RegisterModules();
+        ManagementCommandProcessor.Initialize();
         using Socket listener = new(ipAddress.AddressFamily,
                                     SocketType.Stream,
                                     ProtocolType.Tcp);

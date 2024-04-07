@@ -33,6 +33,9 @@ public class PlayerData {
     // animation bitfield (animations used by avatar, e.g. mounted, swim, ...)
     public int Mbf { get; set; }
 
+    public string DiplayName { get; set; } = "";
+    public Role Role { get; set; } = Role.User;
+
     public static readonly string[] SupportedVariables = {
         "A",   // avatar data
         "FP",  // raised pet data
@@ -93,9 +96,6 @@ public class PlayerData {
 
         IsValid = true;
     }
-
-    public string DiplayName { get; set; } = "";
-    public Role Role { get; set; } = Role.User;
 
     public NetworkArray GetNetworkData(int clientID, out NetworkArray paramArr) {
         NetworkArray arr = new();

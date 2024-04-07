@@ -1,21 +1,25 @@
 ﻿using sodoffmmo.Attributes;
 using sodoffmmo.Core;
 using sodoffmmo.Data;
+using sodoffmmo.Management;
 
 namespace sodoffmmo.CommandHandlers;
 
 [ExtensionCommandHandler("SCM")]
 class ChatMessageHandler : CommandHandler {
     public override Task Handle(Client client, NetworkObject receivedObject) {
+        string message = receivedObject.Get<NetworkObject>("p").Get<string>("chm");
+        if (ManagementCommandProcessor.ProcessCommand(message, client))
+            return Task.CompletedTask;
         if (!Configuration.ServerConfiguration.EnableChat) {
-            ChatDisabled(client, receivedObject);
+            ChatDisabled(client);
         } else {
-            Chat(client, receivedObject);
+            Chat(client, message);
         }
         return Task.CompletedTask;
     }
 
-    public void ChatDisabled(Client client, NetworkObject receivedObject) {
+    public void ChatDisabled(Client client) {
         NetworkObject cmd = new();
         NetworkObject data = new();
         data.Add("arr", new string[] { "CMR", "-1", "-1", "1", "Unfortunately, chat has been disabled by server administrators", "", "1", "Server" });
@@ -26,10 +30,9 @@ class ChatMessageHandler : CommandHandler {
         client.Send(packet);
     }
 
-    public void Chat(Client client, NetworkObject receivedObject) {
+    public void Chat(Client client, string message) {
         if (client.PlayerData.DiplayName == "")
             return;
-        string message = receivedObject.Get<NetworkObject>("p").Get<string>("chm");
 
         NetworkObject cmd = new();
         NetworkObject data = new();
