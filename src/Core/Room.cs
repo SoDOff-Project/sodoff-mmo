@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading;
 using sodoffmmo.Data;
 
 namespace sodoffmmo.Core;
@@ -9,7 +8,7 @@ public class Room {
     protected static Dictionary<string, Room> rooms = new();
 
     List<Client> clients = new();
-    protected ReaderWriterLockSlim roomLock = new ReaderWriterLockSlim();
+    protected object roomLock = new object();
 
     public int Id { get; private set; }
     public string Name { get; private set; }
@@ -40,52 +39,40 @@ public class Room {
 
     public IEnumerable<Client> Clients {
         get {
-            roomLock.EnterReadLock();
-            try {
-                return new List<Client>(clients);
-            } finally {
-                roomLock.ExitReadLock();
+            List<Client> list;
+            lock (roomLock) {
+                list = new List<Client>(clients);
             }
+            return list;
         }
     }
 
     public void AddClient(Client client) {
-        roomLock.EnterWriteLock();
-        try {
+        lock (roomLock) {
             if (IsRemoved)
                 throw new Exception("Call AddClient on removed room");
             client.Send(RespondJoinRoom());
             // NOTE: send RespondJoinRoom() and add client to clients as atomic operation
             //       to make sure to client get full list of players in room
             clients.Add(client);
-        } finally {
-            roomLock.ExitWriteLock();
         }
     }
 
     public void RemoveClient(Client client) {
-        roomLock.EnterWriteLock();
-        try {
+        lock (roomLock) {
             clients.Remove(client);
             if (AutoRemove && ClientsCount == 0) {
                 IsRemoved = true;
                 rooms.Remove(Name);
             }
-        } finally {
-            roomLock.ExitWriteLock();
         }
     }
 
     public void Send(NetworkPacket packet, Client? skip = null) {
-        roomLock.EnterReadLock();
-        try {
-            foreach (var roomClient in clients) {
-                if (roomClient != skip) {
-                    roomClient.Send(packet);
-                }
+        foreach (var roomClient in clients) {
+            if (roomClient != skip) {
+                roomClient.Send(packet);
             }
-        } finally {
-            roomLock.ExitReadLock();
         }
     }
 

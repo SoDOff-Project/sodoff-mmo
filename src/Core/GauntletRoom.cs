@@ -85,8 +85,7 @@ public class GauntletRoom : Room {
     }
 
     public bool ProcessResult(Client client, string resultA, string resultB) {
-        base.roomLock.EnterWriteLock();
-        try {
+        lock (base.roomLock) {
             players[client].resultA = resultA;
             players[client].resultB = resultB;
 
@@ -113,8 +112,6 @@ public class GauntletRoom : Room {
 
             Send(packet);
             return true;
-        } finally {
-            base.roomLock.ExitWriteLock();
         }
     }
 
