@@ -11,7 +11,11 @@ class ChatMessageHandler : CommandHandler {
         string message = receivedObject.Get<NetworkObject>("p").Get<string>("chm");
         if (ManagementCommandProcessor.ProcessCommand(message, client))
             return Task.CompletedTask;
-        if (!Configuration.ServerConfiguration.EnableChat) {
+        if (client.TempMuted) {
+            ClientMuted(client);
+            return Task.CompletedTask;
+        }
+        if (!Configuration.ServerConfiguration.EnableChat && !client.Room.AllowChatOverride) {
             ChatDisabled(client);
         } else {
             Chat(client, message);
@@ -20,35 +24,25 @@ class ChatMessageHandler : CommandHandler {
     }
 
     public void ChatDisabled(Client client) {
-        NetworkObject cmd = new();
-        NetworkObject data = new();
-        data.Add("arr", new string[] { "CMR", "-1", "-1", "1", "Unfortunately, chat has been disabled by server administrators", "", "1", "Server" });
-        cmd.Add("c", "CMR");
-        cmd.Add("p", data);
+        client.Send(Utils.BuildServerSideMessage("Unfortunately, chat has been disabled by server administrators", "Server"));
+    }
 
-        NetworkPacket packet = NetworkObject.WrapObject(1, 13, cmd).Serialize();
-        client.Send(packet);
+    public void ClientMuted(Client client) {
+        client.Send(Utils.BuildServerSideMessage("You have been muted by the moderators", "Server"));
     }
 
     public void Chat(Client client, string message) {
-        if (client.PlayerData.DiplayName == "")
+        if (Configuration.ServerConfiguration.Authentication && client.PlayerData.DiplayName == "placeholder")
             return;
+
+        client.Room.Send(Utils.BuildChatMessage(client.PlayerData.Uid, message, client.PlayerData.DiplayName), client);
 
         NetworkObject cmd = new();
         NetworkObject data = new();
-        data.Add("arr", new string[] { "CMR", "-1", client.PlayerData.Uid, "1", message, "", "1", client.PlayerData.DiplayName });
-        cmd.Add("c", "CMR");
-        cmd.Add("p", data);
-
-        NetworkPacket packet = NetworkObject.WrapObject(1, 13, cmd).Serialize();
-        client.Room.Send(packet, client);
-
-        cmd = new();
-        data = new();
         data.Add("arr", new string[] { "SCA", "-1", "1", message, "", "1" });
         cmd.Add("c", "SCA");
         cmd.Add("p", data);
-        packet = NetworkObject.WrapObject(1, 13, cmd).Serialize();
+        NetworkPacket packet = NetworkObject.WrapObject(1, 13, cmd).Serialize();
         client.Send(packet);
     }
 }

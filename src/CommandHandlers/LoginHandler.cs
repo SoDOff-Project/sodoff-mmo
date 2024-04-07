@@ -90,7 +90,7 @@ class LoginHandler : CommandHandler
                 return false;
             if (responseString == null)
                 throw new Exception("Response string null");
-            Console.WriteLine(responseString);
+
             AuthenticationInfo info = Utils.DeserializeXml<AuthenticationInfo>(responseString);
             if (info.Authenticated) {
                 client.PlayerData.DiplayName = info.DisplayName;

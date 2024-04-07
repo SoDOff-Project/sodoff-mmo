@@ -33,7 +33,7 @@ public class PlayerData {
     // animation bitfield (animations used by avatar, e.g. mounted, swim, ...)
     public int Mbf { get; set; }
 
-    public string DiplayName { get; set; } = "";
+    public string DiplayName { get; set; } = "placeholder";
     public Role Role { get; set; } = Role.User;
 
     public static readonly string[] SupportedVariables = {

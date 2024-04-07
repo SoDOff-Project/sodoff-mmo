@@ -11,6 +11,7 @@ public class Client {
     public int ClientID { get; private set; }
     public PlayerData PlayerData { get; set; } = new();
     public Room? Room { get; private set; }
+    public bool TempMuted { get; set; } = false;
 
     private readonly Socket socket;
     SocketBuffer socketBuffer = new();

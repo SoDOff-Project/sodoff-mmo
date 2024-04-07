@@ -38,4 +38,19 @@ internal static class Utils {
         using (var reader = new StringReader(xmlString))
             return (T)serializer.Deserialize(reader);
     }
+
+    public static NetworkPacket BuildChatMessage(string uid, string message, string displayName) {
+        NetworkObject cmd = new();
+        NetworkObject data = new();
+        data.Add("arr", new string[] { "CMR", "-1", uid, "1", message, "", "1", displayName });
+        cmd.Add("c", "CMR");
+        cmd.Add("p", data);
+
+        return NetworkObject.WrapObject(1, 13, cmd).Serialize();
+    }
+
+    public static NetworkPacket BuildServerSideMessage(string message, string displayName) {
+        return BuildChatMessage("-1", message, displayName);
+    }
+
 }

@@ -16,6 +16,8 @@ public class Room {
     public string Group { get; private set; }
     public bool AutoRemove { get; private set; }
     public bool IsRemoved { get; private set; } = false;
+
+    public bool AllowChatOverride { get; set; } = false;
     public NetworkArray RoomVariables = new();
 
     public Room(string? name, string? group = null, bool autoRemove = false) {

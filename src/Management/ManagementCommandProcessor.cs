@@ -30,7 +30,7 @@ public class ManagementCommandProcessor {
     public static bool ProcessCommand(string message, Client client) {
         if (!Configuration.ServerConfiguration.Authentication || !initialized)
             return false;
-        if (!message.StartsWith("//") && message.Length < 3)
+        if (!message.StartsWith("::") && message.Length < 3)
             return false;
 
         string[] parts = message.Split(' ');
@@ -42,6 +42,7 @@ public class ManagementCommandProcessor {
 
             if (commands.TryGetValue(new Tuple<string, Role>(commandName, currentRole), out Type? commandType)) {
                 IManagementCommand command = (IManagementCommand)Activator.CreateInstance(commandType)!;
+                Console.WriteLine($"Management command {commandName} by {client.PlayerData.DiplayName} ({client.PlayerData.Uid}) in {client.Room.Name}");
                 command.Handle(client, arguments);
                 return true;
             }
