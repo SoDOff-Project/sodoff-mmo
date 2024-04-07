@@ -30,7 +30,7 @@ public class ManagementCommandProcessor {
     public static bool ProcessCommand(string message, Client client) {
         if (!Configuration.ServerConfiguration.Authentication || !initialized)
             return false;
-        if (!message.StartsWith("::") && message.Length < 3)
+        if (!message.StartsWith("::") || message.Length < 3)
             return false;
 
         string[] parts = message.Split(' ');
