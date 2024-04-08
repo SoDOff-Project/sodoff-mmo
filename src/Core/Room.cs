@@ -92,6 +92,13 @@ public class Room {
         return rooms.Values.ToArray();
     }
 
+    public static void DisableAllChatOverrides() {
+        lock (RoomsListLock) {
+            foreach (var room in rooms) {
+                room.Value.AllowChatOverride = false;
+            }
+        }
+    }
 
     public NetworkPacket RespondJoinRoom() {
         NetworkObject obj = new();
