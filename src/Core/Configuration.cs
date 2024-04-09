@@ -21,7 +21,7 @@ internal static class Configuration {
 
         ServerConfiguration = serverConfiguration;
         if (string.IsNullOrEmpty(ServerConfiguration.ApiUrl)) {
-            ServerConfiguration.Authentication = false;
+            ServerConfiguration.Authentication = AuthenticationMode.Disabled;
         }
     }
 }
@@ -37,7 +37,11 @@ internal sealed class ServerConfiguration {
     public int PingDelay { get; set; } = 17;
     public bool EnableChat { get; set; } = true;
     public bool AllowChaos { get; set; } = false;
-    public bool Authentication { get; set; } = false;
+    public AuthenticationMode Authentication { get; set; } = AuthenticationMode.Disabled;
     public string ApiUrl { get; set; } = "";
     public string BypassToken { get; set; } = "";
+}
+
+public enum AuthenticationMode {
+    Disabled, Optional, RequiredForChat, Required
 }

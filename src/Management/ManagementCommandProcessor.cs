@@ -13,7 +13,7 @@ public class ManagementCommandProcessor {
     static bool initialized = false;
 
     public static void Initialize() {
-        if (!Configuration.ServerConfiguration.Authentication)
+        if (Configuration.ServerConfiguration.Authentication == AuthenticationMode.Disabled)
             return;
         commands.Clear();
         var handlerTypes = Assembly.GetExecutingAssembly().GetTypes()
@@ -28,7 +28,7 @@ public class ManagementCommandProcessor {
     }
 
     public static bool ProcessCommand(string message, Client client) {
-        if (!Configuration.ServerConfiguration.Authentication || !initialized)
+        if (!initialized)
             return false;
         if (!message.StartsWith("::") || message.Length < 3)
             return false;

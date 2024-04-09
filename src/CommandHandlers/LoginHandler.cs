@@ -72,9 +72,10 @@ class LoginHandler : CommandHandler
     }
 
     private bool ValidToken(Client client) {
-        if (!Configuration.ServerConfiguration.Authentication ||
+        if (Configuration.ServerConfiguration.Authentication == AuthenticationMode.Disabled ||
             (client.PlayerData.UNToken == Configuration.ServerConfiguration.BypassToken && !string.IsNullOrEmpty(Configuration.ServerConfiguration.BypassToken)))
             return true;
+
         try {
             HttpClient httpClient = new();
             var content = new FormUrlEncodedContent(
@@ -87,7 +88,7 @@ class LoginHandler : CommandHandler
             string? responseString = response.Content.ReadAsStringAsync().Result;
 
             if (response.StatusCode != System.Net.HttpStatusCode.OK)
-                return false;
+                throw new Exception($"Response status code {response.StatusCode}");
             if (responseString == null)
                 throw new Exception("Response string null");
 
@@ -100,6 +101,6 @@ class LoginHandler : CommandHandler
         } catch (Exception ex) {
             Console.WriteLine($"Authentication exception IID: {client.ClientID} - {ex}");
         }
-        return false;
+        return Configuration.ServerConfiguration.Authentication != AuthenticationMode.Required; // return true on auth err if not Required mode
     }
 }
