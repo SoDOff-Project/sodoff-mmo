@@ -161,7 +161,7 @@ class WorldEvent {
     // send reward info
     private void PostEndEvent1(Object? source, ElapsedEventArgs e) {
             NetworkPacket packet = Utils.VlNetworkPacket(
-                "WE_ScoutAttack_End",
+                "WE_" + Configuration.ServerConfiguration.EventName + "_End",
                 lastResults,
                 room.Id
             );
@@ -218,10 +218,10 @@ class WorldEvent {
     public NetworkArray EventInfoArray(bool WE = true, bool WEN = true) {
         NetworkArray vl = new();
         if (WE) {
-            vl.Add(NetworkArray.VlElement("WE_ScoutAttack", EventInfo(), isPersistent:true));
+            vl.Add(NetworkArray.VlElement("WE_" + Configuration.ServerConfiguration.EventName, EventInfo(), isPersistent:true));
         }
         if (WEN) {
-            vl.Add(NetworkArray.VlElement("WEN_ScoutAttack", nextStartTimeString, isPersistent:true));
+            vl.Add(NetworkArray.VlElement("WEN_" + Configuration.ServerConfiguration.EventName, nextStartTimeString, isPersistent:true));
         }
         return vl;
     }
