@@ -11,6 +11,8 @@ public class PlayerData {
     public string Uid { get; set; } = "";
     // client token
     public string UNToken { get; set; } = "";
+    // client zone
+    public string ZoneName { get; set; } = "";
 
     // rotation (eulerAngles.y)
     public float R { get; set; }
@@ -28,7 +30,7 @@ public class PlayerData {
     public float P3 { get; set; }
     // max speed
     public float Mx { get; set; } = 6;
-    // flags (?)
+    // flags
     public int F { get; set; }
     // animation bitfield (animations used by avatar, e.g. mounted, swim, ...)
     public int Mbf { get; set; }
@@ -51,7 +53,10 @@ public class PlayerData {
         "CU",  // country id (int) (for flag?)
         "J",   // join allowed
         "BU",  // busy (?)
-        "M"    // membership status (bool)
+        "M",   // membership status (bool)
+        "P",   // position vector (older games)
+        "R",   // rotation (older games - updated via SUV, not SPV)
+        "F",   // flags (older games - updated via SUV, not SPV)
     };
 
     // other variables (set and updated via SUV command)
@@ -62,29 +67,47 @@ public class PlayerData {
     }
 
     public void SetVariable(string varName, string value) {
-        if (varName == "UID")
+        // do not store in variables directory
+        if (varName == "UID") {
             return;
-        if (varName == "FP")
+        }
+        if (varName == "R") {
+            R = float.Parse(value, CultureInfo.InvariantCulture);
+            return;
+        }
+        if (varName == "F") {
+            F = unchecked((int)Convert.ToUInt32(value, 16));
+            return;
+        }
+
+        // fix variable value before store
+        if (varName == "FP") {
             value = FixMountState(value);
+        }
+
+        // store in directory
         variables[varName] = value;
     }
 
     public void InitFromNetworkData(NetworkObject suvData) {
         // set initial state for SPV data
         R = float.Parse(suvData.Get<string>("R"), CultureInfo.InvariantCulture);
-        P1 = float.Parse(suvData.Get<string>("P1"), CultureInfo.InvariantCulture);
-        P2 = float.Parse(suvData.Get<string>("P2"), CultureInfo.InvariantCulture);
-        P3 = float.Parse(suvData.Get<string>("P3"), CultureInfo.InvariantCulture);
-        R1 = float.Parse(suvData.Get<string>("R1"), CultureInfo.InvariantCulture);
-        R2 = float.Parse(suvData.Get<string>("R2"), CultureInfo.InvariantCulture);
-        R3 = float.Parse(suvData.Get<string>("R3"), CultureInfo.InvariantCulture);
+        string? p1 = suvData.Get<string>("P1");
+        if (p1 != null) {
+            P1 = float.Parse(p1, CultureInfo.InvariantCulture);
+            P2 = float.Parse(suvData.Get<string>("P2"), CultureInfo.InvariantCulture);
+            P3 = float.Parse(suvData.Get<string>("P3"), CultureInfo.InvariantCulture);
+            R1 = float.Parse(suvData.Get<string>("R1"), CultureInfo.InvariantCulture);
+            R2 = float.Parse(suvData.Get<string>("R2"), CultureInfo.InvariantCulture);
+            R3 = float.Parse(suvData.Get<string>("R3"), CultureInfo.InvariantCulture);
+        }
         string? mbf = suvData.Get<string>("MBF");
         if (mbf != null)
             Mbf = int.Parse(mbf);
         F = int.Parse(suvData.Get<string>("F"));
 
         // reset all variables values
-        variables.Clear();
+        // variables.Clear();
 
         // set initial state for SUV data
         foreach (string varName in SupportedVariables) {

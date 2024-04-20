@@ -11,6 +11,7 @@ public class Client {
     public int ClientID { get; private set; }
     public PlayerData PlayerData { get; set; } = new();
     public Room? Room { get; private set; }
+    public bool OldApi { get; set; } = false;
     public bool TempMuted { get; set; } = false;
 
     private readonly Socket socket;
@@ -78,7 +79,11 @@ public class Client {
             NetworkObject cmd = new();
             NetworkObject obj = new();
             cmd.Add("c", "SUV");
-            obj.Add("MID", c.ClientID);
+            if (OldApi) {
+                obj.Add("MID", c.ClientID.ToString());
+            } else {
+                obj.Add("MID", c.ClientID);
+            }
             cmd.Add("p", obj);
             Send(NetworkObject.WrapObject(1, 13, cmd).Serialize());
         }

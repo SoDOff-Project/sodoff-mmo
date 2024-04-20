@@ -11,6 +11,8 @@ class LoginHandler : CommandHandler
     public override Task Handle(Client client, NetworkObject receivedObject)
     {
         client.PlayerData.UNToken = receivedObject.Get<string>("un");
+        client.PlayerData.ZoneName = receivedObject.Get<string>("zn");
+        
         if (!ValidToken(client)) {
             NetworkObject obj = new();
             obj.Add("dr", (byte)1);
@@ -61,7 +63,7 @@ class LoginHandler : CommandHandler
 
         NetworkObject content = new();
         content.Add("rl", rl);
-        content.Add("zn", "JumpStart");
+        content.Add("zn", client.PlayerData.ZoneName);
         content.Add("rs", (short)5);
         content.Add("un", client.PlayerData.UNToken);
         content.Add("id", client.ClientID);

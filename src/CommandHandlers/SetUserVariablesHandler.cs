@@ -62,7 +62,12 @@ class SetUserVariablesHandler : CommandHandler {
         NetworkObject cmd = new();
         cmd.Add("c", "SUV");
         NetworkArray arr = new();
-        data.Add("MID", client.ClientID);
+        if (client.OldApi) {
+            data.Add("MID", client.ClientID.ToString());
+        } else {
+            data.Add("MID", client.ClientID);
+        }
+        data.Add("RID", client.Room.Id.ToString());
         arr.Add(data);
         NetworkObject container = new();
         container.Add("arr", arr);
@@ -97,7 +102,11 @@ class SetUserVariablesHandler : CommandHandler {
         NetworkObject obj = new();
 
         cmd.Add("c", "SUV");
-        obj.Add("MID", client.ClientID);
+        if (client.OldApi) {
+            obj.Add("MID", client.ClientID.ToString());
+        } else {
+            obj.Add("MID", client.ClientID);
+        }
         cmd.Add("p", obj);
 
         NetworkPacket packet = NetworkObject.WrapObject(1, 13, cmd).Serialize();

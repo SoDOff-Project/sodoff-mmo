@@ -17,6 +17,11 @@ class HandshakeHandler : CommandHandler
             return Task.CompletedTask;
         }
 
+        string? api = receivedObject.Get<string>("api");
+        if (api != null && api[0] == '0') {
+            client.OldApi = true;
+        }
+
         NetworkObject obj = new();
 
         obj.Add("tk", RandomString(32));
