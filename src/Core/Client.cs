@@ -69,7 +69,7 @@ public class Client {
                 Room.AddClient(this);
 
                 Send(Room.SubscribeRoom());
-                UpdatePlayerUserVariables();
+                if (Room.Name != "LIMBO") UpdatePlayerUserVariables(); // do not update user vars if room is limbo
             }
         }
     }
