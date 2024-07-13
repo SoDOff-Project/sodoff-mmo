@@ -173,6 +173,7 @@ public class Room {
 
 
     private void StartAlert(AlertInfo alert, Client? specificClient = null) {
+        if (specificClient != null) return; // Disables joining ongoing alerts.
         alert.songId = random.Next(0, alert.songs);
         NetworkArray NewRoomVariables = new();
         NewRoomVariables.Add(NetworkArray.VlElement(REDALERT_START, alertId++, isPersistent: true));
