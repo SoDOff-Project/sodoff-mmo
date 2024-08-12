@@ -174,14 +174,18 @@ public class Room {
 
     private void StartAlert(AlertInfo alert, Client? specificClient = null) {
         if (specificClient != null) return; // Disables joining ongoing alerts.
-        alert.songId = random.Next(0, alert.songs);
+
         NetworkArray NewRoomVariables = new();
         NewRoomVariables.Add(NetworkArray.VlElement(REDALERT_START, alertId++, isPersistent: true));
         NewRoomVariables.Add(NetworkArray.VlElement(REDALERT_TYPE, alert.type, isPersistent: true));
         double duration = (alert.endTime - DateTime.Now).TotalSeconds;
         NewRoomVariables.Add(NetworkArray.VlElement(REDALERT_LENGTH, alert.type == "1" ? alert.redAlertDuration : duration, isPersistent: true));
-        if (alert.type == "1") NewRoomVariables.Add(NetworkArray.VlElement(REDALERT_TIMEOUT, duration, isPersistent: true));
-        if (alert.type == "3") NewRoomVariables.Add(NetworkArray.VlElement(REDALERT_SONG, (double)alert.songId, isPersistent: true));
+        if (alert.type == "1") {
+            NewRoomVariables.Add(NetworkArray.VlElement(REDALERT_TIMEOUT, duration, isPersistent: true));
+        } else if (alert.type == "3") {
+            alert.songId = random.Next(0, alert.songs);
+            NewRoomVariables.Add(NetworkArray.VlElement(REDALERT_SONG, (double)alert.songId, isPersistent: true));
+        }
         NetworkPacket packet = Utils.VlNetworkPacket(NewRoomVariables, Id);
         if (specificClient is null) {
             RoomVariables = NewRoomVariables;

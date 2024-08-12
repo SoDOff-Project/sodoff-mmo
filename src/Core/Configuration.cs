@@ -32,6 +32,7 @@ internal sealed class ServerConfiguration {
     public string EventName { get; set; } = "ScoutAttack";
     public int EventTimer { get; set; } = 30;
     public int FirstEventTimer { get; set; } = 10;
+    public Dictionary<string, string[][]> RoomAlerts { get; set; } = new();
     public int RacingMaxPlayers { get; set; } = 6;
     public int RacingMinPlayers { get; set; } = 2;
     public int RacingMainLobbyTimer { get; set; } = 15;

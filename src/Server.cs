@@ -28,10 +28,19 @@ public class Server {
         if (IPv6AndIPv4)
             listener.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, 0);
         listener.Bind(new IPEndPoint(ipAddress, port));
-        Room.GetOrAdd("LoungeInt").AddAlert(new Room.AlertInfo("3")); // FIXME use config for this
-        Room.GetOrAdd("Spaceport").AddAlert(new Room.AlertInfo("1", 20.0, 300, 300));
-        Room.GetOrAdd("Spaceport").AddAlert(new Room.AlertInfo("2", 120.0, 1800, 3600));
-        Room.GetOrAdd("Academy").AddAlert(new Room.AlertInfo("1", 20.0, 300, 300));
+
+        foreach (var room in Configuration.ServerConfiguration.RoomAlerts) {
+            foreach (var alert in room.Value) {
+                Console.WriteLine($"Setup alert \"{alert[0]}\" for {room.Key}");
+                Room.GetOrAdd(room.Key).AddAlert(new Room.AlertInfo(
+                    alert[0], // type
+                    float.Parse(alert[1], System.Globalization.CultureInfo.InvariantCulture.NumberFormat), // duration
+                    Int32.Parse(alert[2]), Int32.Parse(alert[3]), // start min - max for random start time
+                    Int32.Parse(alert[4]), Int32.Parse(alert[5]) // extra parameters for specific alarm types
+                ));
+            }
+        }
+
         await Listen(listener);
     }
 
