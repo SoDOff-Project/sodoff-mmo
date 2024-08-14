@@ -49,18 +49,6 @@ class LoginHandler : CommandHandler
         r2.Add(WorldEvent.Get().EventInfoArray(true));
         rl.Add(r2);
 
-        NetworkArray r3 = new();
-        r3.Add(2);
-        r3.Add("LIMBO");
-        r3.Add("default");
-        r3.Add(false);
-        r3.Add(false);
-        r3.Add(false);
-        r3.Add((short)31);
-        r3.Add((short)10000);
-        r3.Add(new NetworkArray());
-        rl.Add(r3);
-
         NetworkObject content = new();
         content.Add("rl", rl);
         content.Add("zn", client.PlayerData.ZoneName);
