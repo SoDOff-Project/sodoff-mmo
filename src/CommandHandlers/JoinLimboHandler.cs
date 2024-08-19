@@ -9,7 +9,6 @@ namespace sodoffmmo.CommandHandlers
     {
         public override Task Handle(Client client, NetworkObject receivedObject)
         {
-            // set client room to limbo
             client.SetRoom(Room.GetOrAdd("LIMBO"));
 
             return Task.CompletedTask;
