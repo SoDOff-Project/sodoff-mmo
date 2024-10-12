@@ -10,7 +10,7 @@ class WorldEventStatusHandler : CommandHandler {
     public override Task Handle(Client client, NetworkObject receivedObject) {
         client.Send(Utils.ArrNetworkPacket( new string[] {
             "WESR",
-            "WE_ScoutAttack|" + WorldEvent.Get().EventInfo(),
+            "WE_" + Configuration.ServerConfiguration.EventName + "|" + WorldEvent.Get().EventInfo(),
             "EvEnd|" + WorldEvent.Get().GetLastResults()
         }));
         return Task.CompletedTask;
