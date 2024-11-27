@@ -12,6 +12,7 @@ public class Server {
     readonly IPAddress ipAddress;
     readonly bool IPv6AndIPv4;
     ModuleManager moduleManager = new();
+    public static List<Client> AllClients { get; set; } = new();
 
     public Server(IPAddress ipAdress, int port, bool IPv6AndIPv4) {
         this.ipAddress = ipAdress;
@@ -57,6 +58,7 @@ public class Server {
 
     private async Task HandleClient(Socket handler) {
         Client client = new(handler);
+        AllClients.Add(client);
         try {
             while (client.Connected) {
                 await client.Receive();
@@ -69,6 +71,7 @@ public class Server {
         } finally {
             try {
                 client.SetRoom(null);
+                AllClients.Remove(client);
             } catch (Exception) { }
             client.Disconnect();
             Console.WriteLine("Socket disconnected IID: " + client.ClientID);
