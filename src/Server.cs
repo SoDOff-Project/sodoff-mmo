@@ -1,4 +1,5 @@
-﻿using sodoffmmo.Core;
+﻿using sodoffmmo.API;
+using sodoffmmo.Core;
 using sodoffmmo.Data;
 using sodoffmmo.Management;
 using System;
@@ -42,7 +43,14 @@ public class Server {
             }
         }
 
+        // start api before mmo listener is started
+        var apiBuilder = CreateApiBuilder().Build();
+        await apiBuilder.StartAsync();
         await Listen(listener);
+
+        // when listener thread exists, stop and dispose api
+        await apiBuilder.StopAsync();
+        apiBuilder.Dispose();
     }
 
     private async Task Listen(Socket listener) {
@@ -96,5 +104,14 @@ public class Server {
                 Console.WriteLine($"Exception IID: {client.ClientID} - {ex}");
             }
         }
+    }
+
+    private static IHostBuilder CreateApiBuilder()
+    {
+        return Host.CreateDefaultBuilder().ConfigureWebHostDefaults(webHost => 
+        {
+            webHost.UseUrls($"http://*:{Configuration.ServerConfiguration.HttpApiPort}");
+            webHost.UseStartup<ApiStartup>();
+        });
     }
 }
