@@ -14,5 +14,4 @@ WORKDIR /app
 COPY --from=build /app .
 
 # Run the application
-WORKDIR /app
 ENTRYPOINT ["./sodoffmmo"]
