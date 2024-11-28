@@ -5,6 +5,9 @@ WORKDIR /src
 # Copy the source code
 COPY . .
 
+# Explicitely Install Web SDK
+RUN dotnet add-global package Microsoft.NET.Sdk.Web
+
 # Restore Project
 RUN dotnet build -c Release -o /app
 
