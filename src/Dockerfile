@@ -9,9 +9,9 @@ COPY . .
 RUN dotnet build -c Release -o /app
 
 # Create clean run environment (without source and sdk)
-# FROM mcr.microsoft.com/dotnet/runtime:6.0 AS base
-# WORKDIR /app
-# COPY --from=build /app .
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
+WORKDIR /app
+COPY --from=build /app .
 
 # Run the application
 WORKDIR /app
