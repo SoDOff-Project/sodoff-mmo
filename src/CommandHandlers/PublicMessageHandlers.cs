@@ -14,9 +14,13 @@ class RacingPMHandler : CommandHandler
         NetworkObject p = new();
         NetworkArray arr = new();
         NetworkObject data = new();
-        data.Add("M", new string[] {
-            receivedObject.Get<NetworkObject>("p").Get<string>("M")
-        });
+        string M = receivedObject.Get<NetworkObject>("p").Get<string>("M");
+        if (M.StartsWith("WF:") || M.StartsWith("WFWD:")) {
+            // When firing weapon in EMD, recieving clients expect userid, but the sending client sends its token instead.
+            string token = M.Split(':')[1];
+            M = M.Replace(token, client.PlayerData.Uid);
+        }
+        data.Add("M", new string[] {M});
         data.Add("MID", client.ClientID);
         arr.Add(data);
         p.Add("arr", arr);
