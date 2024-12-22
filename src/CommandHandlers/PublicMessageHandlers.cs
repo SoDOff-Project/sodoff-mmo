@@ -28,7 +28,8 @@ class RacingPMHandler : CommandHandler
         cmd.Add("p", p);
         NetworkPacket packet = NetworkObject.WrapObject(1, 13, cmd).Serialize();
 
-        client.Room.Send(packet);
+        if (client.Room != null) // Throws an exception in Eat my Dust when the player fires their weapon before fully in the room.
+            client.Room.Send(packet);
         return Task.CompletedTask;
     }
 }
