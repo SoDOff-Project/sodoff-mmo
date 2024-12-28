@@ -111,7 +111,7 @@ public class Room {
         roomInfo.Add(false); // is password protected
         roomInfo.Add((short)clients.Count); // player count
         roomInfo.Add((short)4096); // max player count
-        roomInfo.Add(RoomVariables); // variables
+        roomInfo.Add(AddAmbassadorData(RoomVariables)); // variables
         roomInfo.Add((short)0); // spectator count
         roomInfo.Add((short)0); // max spectator count
 
@@ -143,7 +143,7 @@ public class Room {
         r1.Add(false);
         r1.Add((short)clients.Count); // player count
         r1.Add((short)4096); // max player count
-        r1.Add(new NetworkArray());
+        r1.Add(AddAmbassadorData(new()));
         r1.Add((short)0);
         r1.Add((short)0);
 
@@ -154,6 +154,35 @@ public class Room {
         return NetworkObject.WrapObject(0, 15, obj).Serialize();
     }
 
+    public double[] ambassadorGauges;
+    System.Timers.Timer? ambassadorTimer;
+
+    public bool HasAmbassador() {
+        return ambassadorTimer != null;
+    }
+
+    public void InitAmbassador() {
+        ambassadorGauges = new double[3]; // There is always a maximum of 3.
+        for (int i=0;i<3;i++) ambassadorGauges[i] = Configuration.ServerConfiguration.AmbassadorGaugeStart;
+        ambassadorTimer = new System.Timers.Timer(Configuration.ServerConfiguration.AmbassadorGaugeDecayRate*1000);
+        ambassadorTimer.AutoReset = true;
+        ambassadorTimer.Enabled = true;
+        ambassadorTimer.Elapsed += (sender, e) => {
+            if (!Configuration.ServerConfiguration.AmbassadorGaugeDecayOnlyWhenInRoom || clients.Count > 0) {
+                for (int i=0;i<3;i++) ambassadorGauges[i] = Math.Max(0, ambassadorGauges[i]-1);
+                Send(Utils.VlNetworkPacket(AddAmbassadorData(new()), Id));
+            }
+        };
+    }
+
+    internal NetworkArray AddAmbassadorData(NetworkArray array) {
+        if (HasAmbassador()) { // If this isn't null that means ambassadors are initialized.
+            array.Add(NetworkArray.VlElement("COUNT",  (int)Math.Round(ambassadorGauges[0]), isPersistent: true));
+            array.Add(NetworkArray.VlElement("COUNT2", (int)Math.Round(ambassadorGauges[1]), isPersistent: true));
+            array.Add(NetworkArray.VlElement("COUNT3", (int)Math.Round(ambassadorGauges[2]), isPersistent: true));
+        }
+        return array;
+    }
 
     private int alertId = -1;
     private Random random = new Random();
@@ -166,6 +195,8 @@ public class Room {
     }
 
     public void SendAllAlerts(Client client) {
+        return; // Disables joining ongoing alerts (since it doesn't work properly).
+        
         foreach (AlertInfo alert in alerts) {
             if (alert.IsRunning()) StartAlert(alert, client);
         }
@@ -173,8 +204,6 @@ public class Room {
 
 
     private void StartAlert(AlertInfo alert, Client? specificClient = null) {
-        if (specificClient != null) return; // Disables joining ongoing alerts.
-
         NetworkArray NewRoomVariables = new();
         NewRoomVariables.Add(NetworkArray.VlElement(REDALERT_START, alertId++, isPersistent: true));
         NewRoomVariables.Add(NetworkArray.VlElement(REDALERT_TYPE, alert.type, isPersistent: true));

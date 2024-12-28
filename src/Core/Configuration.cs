@@ -33,6 +33,11 @@ internal sealed class ServerConfiguration {
     public int EventTimer { get; set; } = 30;
     public int FirstEventTimer { get; set; } = 10;
     public Dictionary<string, string[][]> RoomAlerts { get; set; } = new();
+    public string[] AmbassadorRooms { get; set; } = Array.Empty<string>();
+    public int AmbassadorGaugeStart { get; set; } = 75;
+    public float AmbassadorGaugeDecayRate { get; set; } = 60;
+    public bool AmbassadorGaugeDecayOnlyWhenInRoom { get; set; } = true;
+    public float AmbassadorGaugePlayers { get; set; } = 0.5f;
     public int RacingMaxPlayers { get; set; } = 6;
     public int RacingMinPlayers { get; set; } = 2;
     public int RacingMainLobbyTimer { get; set; } = 15;
