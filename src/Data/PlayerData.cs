@@ -57,6 +57,9 @@ public class PlayerData {
         "P",   // position vector (older games)
         "R",   // rotation (older games - updated via SUV, not SPV)
         "F",   // flags (older games - updated via SUV, not SPV)
+        "UTI", // group/clan
+        "SPM", // drive mode (Eat My Dust)
+        "H",   // health
     };
 
     // other variables (set and updated via SUV command)
@@ -91,7 +94,8 @@ public class PlayerData {
 
     public void InitFromNetworkData(NetworkObject suvData) {
         // set initial state for SPV data
-        R = float.Parse(suvData.Get<string>("R"), CultureInfo.InvariantCulture);
+        string? r = suvData.Get<string>("R"); // in Eat My Dust, rotation is sent in R1, R2, R3
+        if (r != null) R = float.Parse(r, CultureInfo.InvariantCulture);
         string? p1 = suvData.Get<string>("P1");
         if (p1 != null) {
             P1 = float.Parse(p1, CultureInfo.InvariantCulture);
