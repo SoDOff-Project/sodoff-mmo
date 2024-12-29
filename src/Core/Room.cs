@@ -7,7 +7,7 @@ public class Room {
     static object RoomsListLock = new object();
     protected static Dictionary<string, Room> rooms = new();
 
-    List<Client> clients = new();
+    protected List<Client> clients = new();
     protected object roomLock = new object();
 
     public int Id { get; private set; }
@@ -82,8 +82,10 @@ public class Room {
     
     public static Room GetOrAdd(string name, bool autoRemove = false) {
         lock(RoomsListLock) {
-            if (!Room.Exists(name))
+            if (!Room.Exists(name)) {
+                if (Configuration.ServerConfiguration.AmbassadorRooms.Contains(name)) return new AmbassadorRoom(name);
                 return new Room(name, autoRemove: autoRemove);
+            }
             return rooms[name];
         }
     }
@@ -111,7 +113,10 @@ public class Room {
         roomInfo.Add(false); // is password protected
         roomInfo.Add((short)clients.Count); // player count
         roomInfo.Add((short)4096); // max player count
-        roomInfo.Add(AddAmbassadorData(RoomVariables)); // variables
+        NetworkArray roomVars = new();
+        AddRoomData(roomVars);
+        for (int i=0;i<RoomVariables.Length;i++) roomVars.Add(RoomVariables[i]);
+        roomInfo.Add(roomVars); // variables (plus added data)
         roomInfo.Add((short)0); // spectator count
         roomInfo.Add((short)0); // max spectator count
 
@@ -143,7 +148,9 @@ public class Room {
         r1.Add(false);
         r1.Add((short)clients.Count); // player count
         r1.Add((short)4096); // max player count
-        r1.Add(AddAmbassadorData(new()));
+        NetworkArray vars = new();
+        AddRoomData(vars);
+        r1.Add(vars);
         r1.Add((short)0);
         r1.Add((short)0);
 
@@ -154,35 +161,11 @@ public class Room {
         return NetworkObject.WrapObject(0, 15, obj).Serialize();
     }
 
-    public double[] ambassadorGauges;
-    System.Timers.Timer? ambassadorTimer;
-
-    public bool HasAmbassador() {
-        return ambassadorTimer != null;
-    }
-
-    public void InitAmbassador() {
-        ambassadorGauges = new double[3]; // There is always a maximum of 3.
-        for (int i=0;i<3;i++) ambassadorGauges[i] = Configuration.ServerConfiguration.AmbassadorGaugeStart;
-        ambassadorTimer = new System.Timers.Timer(Configuration.ServerConfiguration.AmbassadorGaugeDecayRate*1000);
-        ambassadorTimer.AutoReset = true;
-        ambassadorTimer.Enabled = true;
-        ambassadorTimer.Elapsed += (sender, e) => {
-            if (!Configuration.ServerConfiguration.AmbassadorGaugeDecayOnlyWhenInRoom || clients.Count > 0) {
-                for (int i=0;i<3;i++) ambassadorGauges[i] = Math.Max(0, ambassadorGauges[i]-1);
-                Send(Utils.VlNetworkPacket(AddAmbassadorData(new()), Id));
-            }
-        };
-    }
-
-    internal NetworkArray AddAmbassadorData(NetworkArray array) {
-        if (HasAmbassador()) { // If this isn't null that means ambassadors are initialized.
-            array.Add(NetworkArray.VlElement("COUNT",  (int)Math.Round(ambassadorGauges[0]), isPersistent: true));
-            array.Add(NetworkArray.VlElement("COUNT2", (int)Math.Round(ambassadorGauges[1]), isPersistent: true));
-            array.Add(NetworkArray.VlElement("COUNT3", (int)Math.Round(ambassadorGauges[2]), isPersistent: true));
-        }
-        return array;
-    }
+    /// <summary>
+    /// Add extra data for the client to recieve upon joining the room.
+    /// </summary>
+    /// <param name="vars">Existing room variables.</param>
+    internal virtual void AddRoomData(NetworkArray vars) {}
 
     private int alertId = -1;
     private Random random = new Random();

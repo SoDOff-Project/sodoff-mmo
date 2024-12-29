@@ -42,11 +42,6 @@ public class Server {
             }
         }
 
-        foreach (var room in Configuration.ServerConfiguration.AmbassadorRooms) {
-            Console.WriteLine($"Setup Ambassador for {room}");
-            Room.GetOrAdd(room).InitAmbassador();
-        }
-
         await Listen(listener);
     }
 
