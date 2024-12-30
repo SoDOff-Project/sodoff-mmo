@@ -27,7 +27,7 @@ class SetUserVariablesHandler : CommandHandler {
             client.PlayerData.InitFromNetworkData(suvData);
             UpdatePlayersInRoom();
             SendSUVToPlayerInRoom();
-            client.Room.SendAllAlerts(client);
+            if (client.Room is SpecialRoom room) room.SendAllAlerts(client);
         } else {
             UpdateVars();
         }

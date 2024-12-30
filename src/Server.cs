@@ -29,17 +29,7 @@ public class Server {
             listener.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, 0);
         listener.Bind(new IPEndPoint(ipAddress, port));
 
-        foreach (var room in Configuration.ServerConfiguration.RoomAlerts) {
-            foreach (var alert in room.Value) {
-                Console.WriteLine($"Setup alert \"{alert[0]}\" for {room.Key}");
-                Room.GetOrAdd(room.Key).AddAlert(new Room.AlertInfo(
-                    alert[0], // type
-                    float.Parse(alert[1], System.Globalization.CultureInfo.InvariantCulture.NumberFormat), // duration
-                    Int32.Parse(alert[2]), Int32.Parse(alert[3]), // start min - max for random start time
-                    Int32.Parse(alert[4]), Int32.Parse(alert[5]) // extra parameters for specific alarm types
-                ));
-            }
-        }
+        SpecialRoom.CreateRooms();
 
         await Listen(listener);
     }
