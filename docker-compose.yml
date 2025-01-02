@@ -6,6 +6,7 @@ services:
       dockerfile: src/Dockerfile
     ports:
       - "9933:9933"
+      - "9934:9934"
     networks:
       - sodoff_network
 

@@ -29,6 +29,7 @@ internal static class Configuration {
 internal sealed class ServerConfiguration {
     public string ListenIP { get; set; } = string.Empty;
     public int Port { get; set; } = 9933;
+    public int HttpApiPort { get; set; } = 9934;
     public string EventName { get; set; } = "ScoutAttack";
     public int EventTimer { get; set; } = 30;
     public int FirstEventTimer { get; set; } = 10;

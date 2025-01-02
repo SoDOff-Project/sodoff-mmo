@@ -1,4 +1,5 @@
-﻿using sodoffmmo.Core;
+﻿using sodoffmmo.API;
+using sodoffmmo.Core;
 using sodoffmmo.Data;
 using sodoffmmo.Management;
 using System;
@@ -12,6 +13,7 @@ public class Server {
     readonly IPAddress ipAddress;
     readonly bool IPv6AndIPv4;
     ModuleManager moduleManager = new();
+    public static List<Client> AllClients { get; set; } = new();
 
     public Server(IPAddress ipAdress, int port, bool IPv6AndIPv4) {
         this.ipAddress = ipAdress;
@@ -31,7 +33,14 @@ public class Server {
 
         SpecialRoom.CreateRooms();
 
+        // start api before mmo listener is started
+        var apiBuilder = CreateApiBuilder().Build();
+        await apiBuilder.StartAsync();
         await Listen(listener);
+
+        // when listener thread exists, stop and dispose api
+        await apiBuilder.StopAsync();
+        apiBuilder.Dispose();
     }
 
     private async Task Listen(Socket listener) {
@@ -47,6 +56,7 @@ public class Server {
 
     private async Task HandleClient(Socket handler) {
         Client client = new(handler);
+        AllClients.Add(client);
         try {
             while (client.Connected) {
                 await client.Receive();
@@ -59,6 +69,7 @@ public class Server {
         } finally {
             try {
                 client.SetRoom(null);
+                AllClients.Remove(client);
             } catch (Exception) { }
             client.Disconnect();
             Console.WriteLine("Socket disconnected IID: " + client.ClientID);
@@ -83,5 +94,14 @@ public class Server {
                 Console.WriteLine($"Exception IID: {client.ClientID} - {ex}");
             }
         }
+    }
+
+    private static IHostBuilder CreateApiBuilder()
+    {
+        return Host.CreateDefaultBuilder().ConfigureWebHostDefaults(webHost => 
+        {
+            webHost.UseUrls($"http://*:{Configuration.ServerConfiguration.HttpApiPort}");
+            webHost.UseStartup<ApiStartup>();
+        });
     }
 }
