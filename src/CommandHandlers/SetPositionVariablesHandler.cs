@@ -50,8 +50,13 @@ class SetPositionVariablesHandler : CommandHandler {
 
         // user event
         string? ue = spvData.Get<string>("UE");
-        if (ue != null)
-            vars.Add("UE", ue);
+        if (ue != null) {
+            long time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            if ((time - client.PlayerData.last_ue_time) > 499 || Configuration.ServerConfiguration.AllowChaos) {
+                vars.Add("UE", ue);
+                client.PlayerData.last_ue_time = time;
+            }
+        }
         // pitch
         float? cup = spvData.Get<float?>("CUP");
         if (cup != null)

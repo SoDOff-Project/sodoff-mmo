@@ -38,6 +38,8 @@ public class PlayerData {
     public string DiplayName { get; set; } = "placeholder";
     public Role Role { get; set; } = Role.User;
 
+    public long last_ue_time { get; set; } = 0;
+
     public static readonly string[] SupportedVariables = {
         "A",   // avatar data
         "FP",  // raised pet data
@@ -69,18 +71,18 @@ public class PlayerData {
         return variables[varName];
     }
 
-    public void SetVariable(string varName, string value) {
+    public string SetVariable(string varName, string value) {
         // do not store in variables directory
         if (varName == "UID") {
-            return;
+            return value;
         }
         if (varName == "R") {
             R = float.Parse(value, CultureInfo.InvariantCulture);
-            return;
+            return value;
         }
         if (varName == "F") {
             F = unchecked((int)Convert.ToUInt32(value, 16));
-            return;
+            return value;
         }
 
         // fix variable value before store
@@ -90,6 +92,7 @@ public class PlayerData {
 
         // store in directory
         variables[varName] = value;
+        return value;
     }
 
     public void InitFromNetworkData(NetworkObject suvData) {

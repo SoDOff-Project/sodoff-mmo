@@ -43,7 +43,7 @@ class SetUserVariablesHandler : CommandHandler {
         foreach (string varName in PlayerData.SupportedVariables) {
             string? value = suvData.Get<string>(varName);
             if (value != null) {
-                client.PlayerData.SetVariable(varName, value);
+                value = client.PlayerData.SetVariable(varName, value);
                 updated = true;
                 data.Add(varName, value);
                 vl.Add(NetworkArray.Param(varName, value));
