@@ -171,6 +171,8 @@ public class PlayerData {
         }
     }
 
+    private string PetGeometry = "";
+
     private string FixMountState(string value) {
         // raised pet geometry - set from Fp
         PetGeometryType GeometryType = PetGeometryType.Default;
@@ -202,6 +204,11 @@ public class PlayerData {
         if (keyValPairs.TryGetValue("U", out string userdata)) {
             PetMounted = (userdata == "0" || userdata == "1");
         }
+        if (Configuration.ServerConfiguration.MakeChaos) {
+            if (PetGeometry == geometry)
+                return variables["FP"];
+            PetGeometry = geometry;
+        }
         if (PetMounted && !Configuration.ServerConfiguration.AllowChaos &&
             (GeometryType == PetGeometryType.Default && PetAge < PetAge.Teen
             || GeometryType == PetGeometryType.Terror && PetAge < PetAge.Titan)
@@ -210,6 +217,14 @@ public class PlayerData {
         } else {
             return value;
         }
+    }
+
+    private Random random = new Random();
+    public void RandomizeDragon() {
+        var s = "*C$";
+        for (var i=0; i<9; ++i)
+            s=s+random.Next(0, 255).ToString() + "$";
+        variables["FP"] = Regex.Replace(variables["FP"], "\\*C\\$[0-9$]*\\*", s + "*");
     }
 }
 

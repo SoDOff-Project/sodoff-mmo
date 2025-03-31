@@ -1,5 +1,6 @@
 ﻿using System;
 using sodoffmmo.Data;
+using System.Timers;
 
 namespace sodoffmmo.Core;
 public class Room {
@@ -33,6 +34,9 @@ public class Room {
         }
         AutoRemove = autoRemove;
         rooms.Add(Name, this);
+
+        if (Configuration.ServerConfiguration.MakeChaos)
+            SetTimer(2);
     }
 
     public int ClientsCount => clients.Count;
@@ -155,4 +159,35 @@ public class Room {
     }
 
     internal virtual NetworkArray GetRoomVars() { return RoomVariables; }
+
+
+    private System.Timers.Timer timer;
+    private Random random = new Random();
+
+    private void SetTimer(double timeout) {
+        if (timer != null) {
+            timer.Stop();
+            timer.Close();
+        }
+
+        timer = new System.Timers.Timer(timeout * 1000);
+        timer.AutoReset = false;
+        timer.Enabled = true;
+        timer.Elapsed += OnTimer;
+    }
+
+    private void OnTimer(Object? source, ElapsedEventArgs e) {
+        foreach (var roomClient in Clients) {
+            roomClient.PlayerData.RandomizeDragon();
+
+            NetworkArray vl = new();
+            NetworkObject data = new();
+            var value = roomClient.PlayerData.GetVariable("FP");
+            data.Add("FP", value);
+            vl.Add(NetworkArray.Param("FP", value));
+
+            roomClient.SendSUV(vl, data);
+        }
+        SetTimer(random.NextDouble() * 9 + 1);
+    }
 }
