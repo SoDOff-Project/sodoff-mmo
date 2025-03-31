@@ -89,6 +89,30 @@ public class Client {
         }
     }
 
+    public void SendSUV(NetworkArray vl, NetworkObject data) {
+        NetworkObject data2 = new();
+        data2.Add("u", ClientID);
+        data2.Add("vl", vl);
+        NetworkPacket packet = NetworkObject.WrapObject(0, 12, data2).Serialize();
+        Room.Send(packet);
+
+        NetworkObject cmd = new();
+        cmd.Add("c", "SUV");
+        NetworkArray arr = new();
+        if (OldApi) {
+            data.Add("MID", ClientID.ToString());
+        } else {
+            data.Add("MID", ClientID);
+        }
+        data.Add("RID", Room.Id.ToString());
+        arr.Add(data);
+        NetworkObject container = new();
+        container.Add("arr", arr);
+        cmd.Add("p", container);
+        packet = NetworkObject.WrapObject(1, 13, cmd).Serialize();
+        Room.Send(packet, this);
+    }
+
     public void Disconnect() {
         try {
             socket.Shutdown(SocketShutdown.Both);
