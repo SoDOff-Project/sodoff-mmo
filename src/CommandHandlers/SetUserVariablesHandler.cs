@@ -50,31 +50,9 @@ class SetUserVariablesHandler : CommandHandler {
             }
         }
 
-        if (!updated) {
-            return;
+        if (updated) {
+            client.SendSUV(vl, data);
         }
-
-        NetworkObject data2 = new();
-        data2.Add("u", client.ClientID);
-        data2.Add("vl", vl);
-        NetworkPacket packet = NetworkObject.WrapObject(0, 12, data2).Serialize();
-        client.Room.Send(packet);
-
-        NetworkObject cmd = new();
-        cmd.Add("c", "SUV");
-        NetworkArray arr = new();
-        if (client.OldApi) {
-            data.Add("MID", client.ClientID.ToString());
-        } else {
-            data.Add("MID", client.ClientID);
-        }
-        data.Add("RID", client.Room.Id.ToString());
-        arr.Add(data);
-        NetworkObject container = new();
-        container.Add("arr", arr);
-        cmd.Add("p", container);
-        packet = NetworkObject.WrapObject(1, 13, cmd).Serialize();
-        client.Room.Send(packet, client);
     }
 
     private void UpdatePlayersInRoom() {
