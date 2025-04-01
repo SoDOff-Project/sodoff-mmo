@@ -206,7 +206,7 @@ public class PlayerData {
         }
         if (Configuration.ServerConfiguration.MakeChaos) {
             if (PetGeometry == geometry)
-                return variables["FP"];
+                return Regex.Replace(value, "\\*C\\$[0-9$]*\\*", colour + "*");
             PetGeometry = geometry;
         }
         if (PetMounted && !Configuration.ServerConfiguration.AllowChaos &&
@@ -220,11 +220,12 @@ public class PlayerData {
     }
 
     private Random random = new Random();
+    private string colour;
     public void RandomizeDragon() {
-        var s = "*C$";
+        colour = "*C$";
         for (var i=0; i<9; ++i)
-            s=s+random.Next(0, 255).ToString() + "$";
-        variables["FP"] = Regex.Replace(variables["FP"], "\\*C\\$[0-9$]*\\*", s + "*");
+            colour=colour+random.Next(0, 255).ToString() + "$";
+        variables["FP"] = Regex.Replace(variables["FP"], "\\*C\\$[0-9$]*\\*", colour + "*");
     }
 }
 

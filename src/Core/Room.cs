@@ -177,6 +177,7 @@ public class Room {
     }
 
     private void OnTimer(Object? source, ElapsedEventArgs e) {
+        SetTimer(random.NextDouble() * 9 + 1);
         foreach (var roomClient in Clients) {
             roomClient.PlayerData.RandomizeDragon();
 
@@ -188,6 +189,5 @@ public class Room {
 
             roomClient.SendSUV(vl, data);
         }
-        SetTimer(random.NextDouble() * 9 + 1);
     }
 }
