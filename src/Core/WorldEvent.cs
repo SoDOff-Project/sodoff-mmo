@@ -160,25 +160,21 @@ class WorldEvent {
     
     // send reward info
     private void PostEndEvent1(Object? source, ElapsedEventArgs e) {
-            NetworkPacket packet = Utils.VlNetworkPacket(
-                "WE_" + Configuration.ServerConfiguration.EventName + "_End",
-                lastResults,
-                room.Id
-            );
-            room.Send(packet);
+        NetworkArray arr = new();
+
+        arr.Add(NetworkArray.VlElement("WE_" + Configuration.ServerConfiguration.EventName + "_End", lastResults));
+        arr.Add(NetworkArray.VlElement("WE_" + Configuration.ServerConfiguration.EventName, NetworkArray.NULL));
+        arr.Add(NetworkArray.VlElement("WE__AI", NetworkArray.NULL));
+        foreach (var t in health) {
+            arr.Add(NetworkArray.VlElement("WEH_" + t.Key, NetworkArray.NULL));
+            arr.Add(NetworkArray.VlElement("WEF_" + t.Key, NetworkArray.NULL));
+        }
+
+        room.Send(Utils.VlNetworkPacket(arr, room.Id));
             
-            NetworkArray vl = new();
-            vl.Add(NetworkArray.VlElement("WE__AI", NetworkArray.NULL));
-            foreach (var t in health) {
-                vl.Add(NetworkArray.VlElement("WEH_" + t.Key, NetworkArray.NULL));
-                vl.Add(NetworkArray.VlElement("WEF_" + t.Key, NetworkArray.NULL));
-            }
-            packet = Utils.VlNetworkPacket(vl, room.Id);
-            room.Send(packet);
+        Console.WriteLine($"Event {uid} sent _End");
             
-            Console.WriteLine($"Event {uid} sent _End");
-            
-            SetTimer(60, PostEndEvent2);
+        SetTimer(60, PostEndEvent2);
     }
     
     // schedule next event, set timer to call PreInit() and send new WEN_ info
