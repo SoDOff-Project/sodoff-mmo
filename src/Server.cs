@@ -31,6 +31,8 @@ public class Server {
 
         SpecialRoom.CreateRooms();
 
+        DiscordManager.Initialize();
+
         await Listen(listener);
     }
 
