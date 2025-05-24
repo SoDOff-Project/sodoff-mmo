@@ -38,6 +38,7 @@ class ChatMessageHandler : CommandHandler {
         }
 
         client.Room.Send(Utils.BuildChatMessage(client.PlayerData.Uid, message, client.PlayerData.DiplayName), client);
+        DiscordManager.SendMessage(client.PlayerData.DiplayName+">"+message, client.Room);
 
         NetworkObject cmd = new();
         NetworkObject data = new();
