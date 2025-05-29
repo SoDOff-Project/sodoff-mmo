@@ -11,6 +11,7 @@ class ChatMessageHandler : CommandHandler {
         string message = receivedObject.Get<NetworkObject>("p").Get<string>("chm");
         if (ManagementCommandProcessor.ProcessCommand(message, client))
             return Task.CompletedTask;
+        if (CheckIllegalName(client)) return Task.CompletedTask;
         if (client.TempMuted) {
             ClientMuted(client);
             return Task.CompletedTask;
@@ -21,6 +22,14 @@ class ChatMessageHandler : CommandHandler {
             Chat(client, message);
         }
         return Task.CompletedTask;
+    }
+
+    public static bool CheckIllegalName(Client client) {
+        if (client.PlayerData.DiplayName.Equals("Server", StringComparison.InvariantCultureIgnoreCase)) {
+            client.Send(Utils.BuildServerSideMessage("You may not use chat with that name.", "Server"));
+            return true;
+        }
+        return false;
     }
 
     public void ChatDisabled(Client client) {
@@ -38,8 +47,8 @@ class ChatMessageHandler : CommandHandler {
         }
 
         client.Room.Send(Utils.BuildChatMessage(client.PlayerData.Uid, message, client.PlayerData.DiplayName), client);
-        DiscordManager.SendMessage(client.PlayerData.DiplayName+">"+message, client.Room);
-
+        DiscordManager.SendPlayerBasedMessage(message, ":speech_balloon: {1}>{0}", client.Room, client.PlayerData);
+        
         NetworkObject cmd = new();
         NetworkObject data = new();
         data.Add("arr", new string[] { "SCA", "-1", "1", message, "", "1" });

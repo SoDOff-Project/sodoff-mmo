@@ -86,6 +86,8 @@ class LoginHandler : CommandHandler
             if (info.Authenticated) {
                 client.PlayerData.DiplayName = info.DisplayName;
                 client.PlayerData.Role = info.Role;
+                client.PlayerData.VikingId = info.Id;
+                client.GameVersion = info.Version;
                 return true;
             }
         } catch (Exception ex) {

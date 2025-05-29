@@ -1,4 +1,5 @@
 ﻿using sodoffmmo.Data;
+using sodoffmmo.Management;
 using System;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -18,6 +19,7 @@ public class Client {
     SocketBuffer socketBuffer = new();
     private volatile bool scheduledDisconnect = false;
     private readonly object clientLock = new();
+    public uint GameVersion { get; set; }
 
     public Client(Socket clientSocket) {
         socket = clientSocket;
@@ -59,6 +61,7 @@ public class Client {
                 data.Add("r", Room.Id);
                 data.Add("u", ClientID);
                 Room.Send(NetworkObject.WrapObject(0, 1004, data).Serialize());
+                DiscordManager.SendPlayerBasedMessage("", ":red_square: {1} has left the room.", Room, PlayerData);
             }
 
             // set new room (null when SetRoom is used as LeaveRoom)
@@ -70,6 +73,7 @@ public class Client {
 
                 Send(Room.SubscribeRoom());
                 if (Room.Name != "LIMBO") UpdatePlayerUserVariables(); // do not update user vars if room is limbo
+                DiscordManager.SendPlayerBasedMessage("", ":green_square: {1} has joined the room.", Room, PlayerData);
             }
         }
     }

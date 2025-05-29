@@ -2,6 +2,7 @@
 using System.Globalization;
 using sodoffmmo.Core;
 using sodoffmmo.Management;
+using System.Text.Json;
 
 namespace sodoffmmo.Data;
 public class PlayerData {
@@ -37,6 +38,7 @@ public class PlayerData {
 
     public string DiplayName { get; set; } = "placeholder";
     public Role Role { get; set; } = Role.User;
+    public int VikingId { get; set; }
 
     public long last_ue_time { get; set; } = 0;
 
@@ -88,6 +90,25 @@ public class PlayerData {
         // fix variable value before store
         if (varName == "FP") {
             value = FixMountState(value);
+        }
+
+        // update the playername (sent with avatardata) if it changes
+        // this is also hit when the player joins the room
+        if (varName == "A" && variables.GetValueOrDefault("A") != value) {
+            try {
+                // Gonna surround this in a try/catch in case for some
+                // reason it breaks so that it doesn't break MMO.
+                string? name = JsonSerializer.Deserialize<AvatarData>(value)?.DisplayName;
+                if (name != null && name != DiplayName) {
+                    string msg = ":label: {1} has changed their name to {0}";
+                    if (name.Equals("Server", StringComparison.InvariantCultureIgnoreCase)) {
+                        msg += ". *This name will block them from speaking.*";
+                    }
+                    DiscordManager.SendPlayerBasedMessage(name, msg, player: this);
+                    DiplayName = name;
+                }
+            }
+            catch (Exception) {} // Pokemon-style exception handling
         }
 
         // store in directory
@@ -210,6 +231,10 @@ public class PlayerData {
         } else {
             return value;
         }
+    }
+
+    public bool EMDDriving() {
+        return variables.TryGetValue("SPM", out string? value) && value == "Driver";
     }
 }
 

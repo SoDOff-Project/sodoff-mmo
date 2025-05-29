@@ -12,6 +12,12 @@ public class AuthenticationInfo {
 
     [XmlElement]
     public Role Role { get; set; }
+
+    [XmlElement]
+    public int Id { get; set; }
+
+    [XmlElement]
+    public uint Version { get; set; }
 }
 
 [Serializable]
