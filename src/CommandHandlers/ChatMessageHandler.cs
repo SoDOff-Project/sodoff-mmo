@@ -12,7 +12,7 @@ class ChatMessageHandler : CommandHandler {
         if (ManagementCommandProcessor.ProcessCommand(message, client))
             return Task.CompletedTask;
         if (CheckIllegalName(client)) return Task.CompletedTask;
-        if (client.TempMuted) {
+        if (client.Muted) {
             ClientMuted(client);
             return Task.CompletedTask;
         }

@@ -9,17 +9,23 @@ public class Client {
     static int id;
     static object lck = new();
 
+                              // VikingId, Reason (nullable)
+    public static readonly Dictionary<int, string?> MutedList = new();
+    public static readonly Dictionary<int, string?> BannedList = new();
+
     public int ClientID { get; private set; }
     public PlayerData PlayerData { get; set; } = new();
     public Room? Room { get; private set; }
+    public Room? ReturnRoomOnPardon { get; private set; } = null;
     public bool OldApi { get; set; } = false;
-    public bool TempMuted { get; set; } = false;
+    public uint GameVersion { get; set; }
+    public bool Muted { get; set; } = false;
+    public bool Banned { get; set; } = false;
 
     private readonly Socket socket;
     SocketBuffer socketBuffer = new();
     private volatile bool scheduledDisconnect = false;
     private readonly object clientLock = new();
-    public uint GameVersion { get; set; }
 
     public Client(Socket clientSocket) {
         socket = clientSocket;
@@ -53,7 +59,12 @@ public class Client {
             // set variable player data as not valid, but do not reset all player data
             PlayerData.IsValid = false;
 
-            if (Room != null) {
+            bool transfer = Configuration.DiscordBotConfig != null && Room != null && room != null &&
+                Configuration.DiscordBotConfig.Merges.Values
+                        .Any(rooms => rooms.Contains(Room.Name) && rooms.Contains(room.Name));
+
+            ReturnRoomOnPardon = room; // This is needed so that users are put where they're supposed to when they're unbanned.
+            if (Room != null && (!Banned || !Room.Name.StartsWith("BannedUserRoom_"))) {
                 Console.WriteLine($"Leave room: {Room.Name} (id={Room.Id}, size={Room.ClientsCount}) IID: {ClientID}");
                 Room.RemoveClient(this);
 
@@ -61,19 +72,41 @@ public class Client {
                 data.Add("r", Room.Id);
                 data.Add("u", ClientID);
                 Room.Send(NetworkObject.WrapObject(0, 1004, data).Serialize());
-                DiscordManager.SendPlayerBasedMessage("", ":red_square: {1} has left the room.", Room, PlayerData);
+                if (!transfer) DiscordManager.SendPlayerBasedMessage("", ":red_square: {1} has left the room.", Room, PlayerData);
             }
 
-            // set new room (null when SetRoom is used as LeaveRoom)
-            Room = room;
+            if (Banned) {
+                if (room != null) {
+                    Room = Room.GetOrAdd("BannedUserRoom_" + ClientID, autoRemove: true);
+                    if (Room.Clients.Contains(this)) {
+                        // Run all addclient things but no duplicate.
+                        Room.AddClient(this);    // Appends to end.
+                        Room.RemoveClient(this); // Removes first instance.
+                    } else {
+                        Room.AddClient(this);
+                    }
+                    Send(Room.SubscribeRoom());
+                } else {
+                    Room?.RemoveClient(this);
+                    Room = null;
+                }
+            } else {
+                // set new room (null when SetRoom is used as LeaveRoom)
+                Room? oldRoom = Room;
+                Room = room;
 
-            if (Room != null) {
-                Console.WriteLine($"Join room: {Room.Name} RoomID (id={Room.Id}, size={Room.ClientsCount}) IID: {ClientID}");
-                Room.AddClient(this);
+                if (Room != null) {
+                    Console.WriteLine($"Join room: {Room.Name} RoomID (id={Room.Id}, size={Room.ClientsCount}) IID: {ClientID}");
+                    Room.AddClient(this);
 
-                Send(Room.SubscribeRoom());
-                if (Room.Name != "LIMBO") UpdatePlayerUserVariables(); // do not update user vars if room is limbo
-                DiscordManager.SendPlayerBasedMessage("", ":green_square: {1} has joined the room.", Room, PlayerData);
+                    Send(Room.SubscribeRoom());
+                    if (Room.Name != "LIMBO") UpdatePlayerUserVariables(); // do not update user vars if room is limbo
+                    if (transfer) {
+                        DiscordManager.SendPlayerBasedMessage("", ":cyclone: {1} transferred from "+$"{oldRoom!.Name} to {room!.Name}.", Room, PlayerData);
+                    } else {
+                        DiscordManager.SendPlayerBasedMessage("", ":green_square: {1} has joined the room.", Room, PlayerData);
+                    }
+                }
             }
         }
     }

@@ -88,6 +88,8 @@ class LoginHandler : CommandHandler
                 client.PlayerData.Role = info.Role;
                 client.PlayerData.VikingId = info.Id;
                 client.GameVersion = info.Version;
+                client.Muted = Client.MutedList.ContainsKey(info.Id);
+                client.Banned = Client.BannedList.ContainsKey(info.Id);
                 return true;
             }
         } catch (Exception ex) {

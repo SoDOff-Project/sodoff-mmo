@@ -5,4 +5,4 @@ src/bin
 src/obj
 src/Properties
 src/sodoffmmo.csproj.user
-/src/discord_bot.json
+/src/discord_bot_token

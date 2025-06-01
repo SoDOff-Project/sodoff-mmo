@@ -1,4 +1,12 @@
 {
+  "// Usage": { "_": "(This example section isn't read. It can therefore be used for comments/documentation.)",
+    "// Desc":  "Actions, emoticons, and canned chat messages are sent as IDs. This file maps these IDs to meaningful representations.",
+    "// Desc2": "If adding/changing any of these emotes, you should update this file accordingly.",
+    "450": {                                    "_ID": "ID of the emote; this should be unique to the emote and must be a 32-bit integer.",
+      "a0000000": "I'm in School of Dragons!",  "_Version": "Override for game with ClientVersion greater than or equal to this. For instance, this targets Min_SoD. Representation is in hexadecimal and is NOT case-sensitive. There can be multiple of these.",
+      "0": "I'm in a JumpStart Game!",          "_Zero": "There should be something at 0 to handle all lower ClientVersions, lest it show up as unknown."
+    }
+  },
   "Emoticons": {
     "1": {
       "04000001": ":grimacing:",

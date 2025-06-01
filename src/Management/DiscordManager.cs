@@ -6,87 +6,77 @@ using System.Collections.Concurrent;
 using sodoffmmo.Core;
 using Discord.Rest;
 using sodoffmmo.Data;
+using System.Runtime.CompilerServices;
+using System.Numerics;
 
 namespace sodoffmmo.Management;
 
 class DiscordManager {
-    private static readonly string token_file;
-
-    private static readonly ConcurrentQueue<QueuedMessage> queue = new();
-    private static DiscordSocketClient client;
-    private static BotConfig config;
-    private static SocketTextChannel channel;
-
-    static DiscordManager() {
-        DirectoryInfo dir = new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "src"));
-        while (dir.Parent != null) {
-            if (dir.Name == "src" && dir.Exists) break;
-            dir = dir.Parent;
-        }
-        if (dir.Parent == null) dir = new DirectoryInfo(Directory.GetCurrentDirectory());
-        token_file = Path.Combine(dir.FullName, "discord_bot.json");
-    }
+    private static readonly ConcurrentQueue<QueuedMessage> MessageQueue = new();
+    private static DiscordSocketClient BotClient;
+    private static SocketTextChannel BotChannel;
 
     public static void Initialize() {
-        try {
-            // This approach is taken because I don't want to accidentally
-            // push my bot token because it was in appsettings. The
-            // json handled here has been added to gitignore.
-            if (File.Exists(token_file)) {
-                Task.Run(() => RunBot(JsonSerializer.Deserialize<BotConfig>(File.ReadAllText(token_file))));
-            } else {
-                Log("Discord Integration not started because the file containing the token was not found.\nPut the token in \""+token_file+"\" and restart the server to use Discord Integration.", ConsoleColor.Yellow);
-                File.WriteAllText(token_file, JsonSerializer.Serialize(new BotConfig {
-                    Token = ""
-                }, new JsonSerializerOptions {
-                    WriteIndented = true
-                }));
+        if (Configuration.DiscordBotConfig?.Disabled == false) { // Bot config isn't null or disabled.
+            try {
+                string botTokenPath = Path.Combine(Path.GetDirectoryName(typeof(Configuration).Assembly.Location), "discord_bot_token");
+                if (File.Exists(botTokenPath)) {
+                    string? token = new StreamReader(botTokenPath).ReadLine();
+                    if (token != null) {
+                        if (Configuration.DiscordBotConfig.Server != 0) {
+                            if (Configuration.DiscordBotConfig.Channel != 0) {
+                                Task.Run(() => RunBot(token));
+                                return;
+                            }
+                            Log("Discord bot was not started because the ServerID isn't set. Configure it in appsettings.json or disable it altogether.", ConsoleColor.Yellow);
+                            return;
+                        }
+                        Log("Discord bot was not started because the ChannelID isn't set. Configure it in appsettings.json or disable it altogether.", ConsoleColor.Yellow);
+                        return;
+                    }
+                }
+                Log("Discord bot was not started because the token wasn't found. Create the file containing the bot token (see instructions src/appsettings.json) or disable it altogether in appsettings.json.", ConsoleColor.Yellow);
+            } catch (Exception e) {
+                Log(e.ToString(), ConsoleColor.Red);
             }
-        } catch (Exception e) {
-            Log(e.ToString(), ConsoleColor.Red);
         }
     }
 
-    private static async Task RunBot(BotConfig? config) {
-        if (config == null) {
-            Log("Bot config didn't deserialize correctly. Discord Integration is not active.", ConsoleColor.Yellow);
-            return;
-        }
-        client = new DiscordSocketClient(new DiscordSocketConfig {
+    private static async Task RunBot(string token) {
+        BotClient = new DiscordSocketClient(new DiscordSocketConfig {
             GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers | GatewayIntents.MessageContent,
             AlwaysDownloadUsers = true
         });
-        client.Ready += async () => {
-            channel = client.GetGuild(config.Server).GetTextChannel(config.Channel);
+        BotClient.Ready += async () => {
+            BotChannel = BotClient.GetGuild(Configuration.DiscordBotConfig!.Server).GetTextChannel(Configuration.DiscordBotConfig!.Channel);
         };
-        client.MessageReceived += OnDiscordMessage;
-        await client.LoginAsync(TokenType.Bot, config.Token);
-        DiscordManager.config = config;
-        Log("Loaded bot config from "+token_file+" and bot is running.");
-        await client.StartAsync();
+        BotClient.MessageReceived += OnDiscordMessage;
+        await BotClient.LoginAsync(TokenType.Bot, token);
+        await BotClient.StartAsync();
+        Log("Discord bot is running.");
         while (true) {
             try {
-                if (!queue.IsEmpty && queue.TryDequeue(out QueuedMessage message)) {
-                    SocketTextChannel? destination = channel;
+                if (!MessageQueue.IsEmpty && MessageQueue.TryDequeue(out QueuedMessage message)) {
+                    SocketTextChannel? destination = BotChannel;
                     if (message.room != null) {
-                        if (message.room.Name == "LIMBO") continue;
-                        string room = message.room.Name;
-                        destination = channel.Threads.SingleOrDefault(x => x.Name == room);
+                        if (message.room.Name == "LIMBO" || message.room.Name.StartsWith("BannedUserRoom_")) continue; // Don't log stuff in LIMBO or Banned User.
+                        string room = message.roomName!;
+                        destination = BotChannel.Threads.SingleOrDefault(x => x.Name == room);
                         if (destination == null) {
                             // A discord channel can have up to 1000 active threads
                             // and an unlimited number of archived threads.
                             if (message.room.AutoRemove) {
                                 // Set temporary rooms (such as user rooms) to shorter archive times.
-                                destination = await channel.CreateThreadAsync(room, autoArchiveDuration: ThreadArchiveDuration.OneHour);
+                                destination = await BotChannel.CreateThreadAsync(room, autoArchiveDuration: ThreadArchiveDuration.OneHour);
                             } else {
                                 // Persistent rooms should stay around for longer.
-                                destination = await channel.CreateThreadAsync(room, autoArchiveDuration: ThreadArchiveDuration.OneWeek);
+                                destination = await BotChannel.CreateThreadAsync(room, autoArchiveDuration: ThreadArchiveDuration.OneWeek);
                             }
                         }
                     }
                     await destination.SendMessageAsync(message.msg);
                 }
-            } catch (Exception e) {
+            } catch (Exception e) { // In case something goes wrong for any reason, don't "kill" the bot.
                 Log(e.ToString(), ConsoleColor.Red);
             }
         }
@@ -95,65 +85,331 @@ class DiscordManager {
     // For handling commands sent directly in the channel.
     private static async Task OnDiscordMessage(SocketMessage arg) {
         // Check that message is from a user in the correct place.
-        bool roomChannel = arg.Channel is SocketThreadChannel thr && thr.ParentChannel.Id == config.Channel;
+        bool roomChannel = arg.Channel is SocketThreadChannel thr && thr.ParentChannel.Id == BotChannel.Id;
         if (!(
-                arg.Channel.Id == config.Channel ||
-                roomChannel
+                roomChannel ||
+                arg.Channel.Id == BotChannel.Id
             ) ||
             arg is not SocketUserMessage socketMessage ||
             socketMessage.Author.IsBot
         ) return;
-        
+        // Get the room if it exists.
+        Room? room = (roomChannel && Room.Exists(arg.Channel.Name)) ? Room.Get(arg.Channel.Name) : null;
+
+        // Perms
+        Role role = Role.User;
+        if (arg.Author is IGuildUser user) {
+            if (user.RoleIds.Contains(Configuration.DiscordBotConfig!.RoleAdmin)) {
+                role = Role.Admin;
+            } else if (user.RoleIds.Contains(Configuration.DiscordBotConfig!.RoleModerator)) {
+                role = Role.Admin;
+            }
+        }
+
         string[] message = socketMessage.Content.Split(' ');
         if (message.Length >= 1) {
             string[] everywhereCommands = new string[] {
-                // Denotes commands that work identically regardless
-                // of whether you're in a room thread.
-                "!tempmute <int: vikingid> [string... reason] - Mute someone until they reconnect."
+                // Denotes commands that work the same or similarly
+                // regardless of whether you're in a room thread.
+                "!freechat <bool: enabled> - Enable/Disable free chat in all rooms.",
+                "!tempmute <int: vikingid> [string... reason] - Mute someone (until they reconnect or go elsewhere).",
+                "!untempmute <int: vikingid> - Revoke a tempmute.",
+                "!mute <int: vikingid> [string... reason] - Mute a vikingid (currently forgotten after server restart due to technical restrictions, but this will probably be fixed in the future).",
+                "!unmute <int: vikingid> - Revoke a mute.",
+                "!ban <int: vikingid> [string... reason] - Ban a vikingid from MMO (currently forgotten after server restart due to technical restrictions, but this will probably be fixed in the future).",
+                "!unban <int: vikingid> - Revoke a ban.",
+                "!pardon <int: vikingid> - Alias for !unban",
+                "!mutelist - Get a list of muted users.",
+                "!banlist - Get a list of banned users.",
             };
-            bool un_command = message[0].StartsWith("!un");
-            if (message[0] == "!tempmute" || message[0] == "!untempmute") {
-                if (message.Length > 1 && int.TryParse(message[1], out int id)) {
-                    foreach (Room room in Room.AllRooms()) {
-                        foreach (Client player in room.Clients) {
-                            if (player.PlayerData.VikingId == id) {
-                                if (player.TempMuted != un_command) {
-                                    await arg.Channel.SendMessageAsync($"This player is {(un_command ? "not" : "already")} tempmuted.", messageReference: arg.Reference);
-                                } else {
-                                    player.TempMuted = !un_command;
-                                    string reason = string.Empty;
-                                    string msg = un_command ? "Un-tempmuted" : "Tempmuted";
-                                    msg += $" {player.PlayerData.DiplayName}.";
-                                    if (message.Length >= 2) {
-                                        reason = string.Join(' ', message, 2, message.Length - 2);
-                                        msg += " Reason: "+reason;
-                                    }
-                                    await arg.Channel.SendMessageAsync(msg, messageReference: arg.Reference);
-                                }
-                                goto tempmute_search_loop_end;
-                            }
+            if (message[0] == "!freechat") {
+                if (role < Role.Moderator) {
+                    await arg.Channel.SendMessageAsync("You don't have permission to use this!", messageReference: arg.Reference);
+                    return;
+                }
+                // freechat command
+                if (message.Length > 1) {
+                    bool enable;
+                    if (!bool.TryParse(message[1], out enable)) {
+                        if ((message[1][0] & 0b11011111) == 'Y') {
+                            enable = true;
+                        } else if ((message[1][0] & 0b11011111) == (int)'N') {
+                            enable = false;
+                        } else {
+                            await arg.Channel.SendMessageAsync("Input a boolean or yes/no value!", messageReference: arg.Reference);
+                            return;
                         }
                     }
-                    tempmute_search_loop_end:;// StackOverflow said to do it like this (no labeled break like in Java).
+                    Configuration.ServerConfiguration.EnableChat = enable;
+                    await arg.Channel.SendMessageAsync($"Chat {(enable?"en":"dis")}abled!", messageReference: arg.Reference);
+                } else {
+                    await arg.Channel.SendMessageAsync("Input a value!", messageReference: arg.Reference);
+                }
+            } else if (message[0] == "!tempmute") {
+                if (role < Role.Moderator) {
+                    await arg.Channel.SendMessageAsync("You don't have permission to use this!", messageReference: arg.Reference);
+                    return;
+                }
+                // tempmute command
+                if (message.Length > 1 && int.TryParse(message[1], out int id)) {
+                    IEnumerable<Client> vikings = FindViking(id, room);
+                    if (room != null && !vikings.Any()) vikings = FindViking(id); // Plan B
+                    if (vikings.Any()) {
+                        bool sent = false;
+                        string? reason = null;
+                        if (message.Length > 2) {
+                            reason = string.Join(' ', message, 2, message.Length - 2);
+                        }
+                        foreach (Client player in vikings) {
+                            if (player.Muted) {
+                                if (Client.MutedList.TryGetValue(id, out string? rreason)) {
+                                    string msg = "This user is already muted.";
+                                    if (rreason != null && rreason.Length > 0) msg += " Reason: "+rreason;
+                                    if (!sent) await arg.Channel.SendMessageAsync(msg, messageReference: arg.Reference);
+                                } else {
+                                    if (!sent) await arg.Channel.SendMessageAsync("This user is already tempmuted.", messageReference: arg.Reference);
+                                }
+                            } else {
+                                player.Muted = true;
+                                string msg = $"Tempmuted {player.PlayerData.DiplayName}";
+                                if (reason != null) {
+                                    msg += ". Reason: "+reason;
+                                }
+                                if (!sent) await arg.Channel.SendMessageAsync(msg, messageReference: arg.Reference);
+                            }
+                            sent = true;
+                        }
+                    } else {
+                        await arg.Channel.SendMessageAsync("User with that ID is not online.", messageReference: arg.Reference);
+                    }
                 } else {
                     await arg.Channel.SendMessageAsync("Input a valid vikingid!", messageReference: arg.Reference);
                 }
-            } else if (roomChannel) {
-                if (message[0] == "!help") {
-                    await arg.Channel.SendMessageAsync(string.Join(Environment.NewLine, new string[] {
-                            "### List of commands:",
-                            "!help - Prints the help message. That's this message right here!",
-                            "!list - Lists all players in this room.",
-                            "!say <string... message> - Say something in this room."
-                        }.Concat(everywhereCommands)
-                    ));
-                } else if (message[0] == "!list") {
-                    if (!Room.Exists(arg.Channel.Name)) {
-                        await arg.Channel.SendMessageAsync("This room is currently unloaded.", messageReference: arg.Reference);
+            } else if (message[0] == "!untempmute") {
+                if (role < Role.Moderator) {
+                    await arg.Channel.SendMessageAsync("You don't have permission to use this!", messageReference: arg.Reference);
+                    return;
+                }
+                // un-tempmute command
+                if (message.Length > 1 && int.TryParse(message[1], out int id)) {
+                    IEnumerable<Client> vikings = FindViking(id, room);
+                    if (room != null && !vikings.Any()) vikings = FindViking(id); // Plan B
+                    if (vikings.Any()) {
+                        bool sent = false;
+                        foreach (Client player in vikings) {
+                            if (player.Muted) {
+                                if (Client.MutedList.ContainsKey(id)) {
+                                    if (!sent) await arg.Channel.SendMessageAsync("This user is true muted. To unmute them, use !unmute", messageReference: arg.Reference);
+                                } else {
+                                    player.Muted = false;
+                                    if (!sent) await arg.Channel.SendMessageAsync($"Un-tempmuted {player.PlayerData.DiplayName}.", messageReference: arg.Reference);
+                                }
+                            } else {
+                                if (!sent) await arg.Channel.SendMessageAsync("This user is not muted.", messageReference: arg.Reference);
+                            }
+                            sent = true;
+                        }
                     } else {
-                        Room room = Room.Get(arg.Channel.Name);
+                        await arg.Channel.SendMessageAsync("User with that ID is not online.", messageReference: arg.Reference);
+                    }
+                } else {
+                    await arg.Channel.SendMessageAsync("Input a valid vikingid!", messageReference: arg.Reference);
+                }
+            } else if (message[0] == "!mute") {
+                if (role < Role.Moderator) {
+                    await arg.Channel.SendMessageAsync("You don't have permission to use this!", messageReference: arg.Reference);
+                    return;
+                }
+                // true mute command
+                if (message.Length > 1 && int.TryParse(message[1], out int id)) {
+                    string? name = null;
+                    IEnumerable<Client> vikings = FindViking(id, room);
+                    if (room != null && !vikings.Any()) vikings = FindViking(id); // Plan B
+                    foreach (Client player in vikings) {
+                        name = player.PlayerData.DiplayName;
+                        player.Muted = true;
+                    }
+                    if (Client.MutedList.TryGetValue(id, out string? rreason)) {
+                        string msg = "This user is already muted.";
+                        if (rreason != null && rreason.Length > 0) msg += " Reason: "+rreason;
+                        await arg.Channel.SendMessageAsync(msg, messageReference: arg.Reference);
+                    } else {
+                        string? reason = null;
+                        if (message.Length > 2) {
+                            reason = string.Join(' ', message, 2, message.Length - 2);
+                        }
+                        Client.MutedList.Add(id, reason);
+                        string msg = $"Muted *VikingID {id}*";
+                        if (name != null) msg = $"Muted {name}";
+                        if (reason != null) {
+                            msg += ". Reason: " + reason;
+                        }
+                        await arg.Channel.SendMessageAsync(msg, messageReference: arg.Reference);
+                    }
+                } else {
+                    await arg.Channel.SendMessageAsync("Input a valid vikingid!", messageReference: arg.Reference);
+                }
+            } else if (message[0] == "!unmute") {
+                if (role < Role.Moderator) {
+                    await arg.Channel.SendMessageAsync("You don't have permission to use this!", messageReference: arg.Reference);
+                    return;
+                }
+                // unmute command
+                if (message.Length > 1 && int.TryParse(message[1], out int id)) {
+                    string? name = null;
+                    IEnumerable<Client> vikings = FindViking(id, room);
+                    if (room != null && !vikings.Any()) vikings = FindViking(id); // Plan B
+                    if (vikings.Any()) {
+                        foreach (Client player in vikings) {
+                            if (player.Muted) {
+                                name = player.PlayerData.DiplayName;
+                                player.Muted = false;
+                            }
+                        }
+                    }
+                    if (Client.MutedList.Remove(id) || name != null) { // name is only set if there is an unmute
+                        if (name != null) {
+                            await arg.Channel.SendMessageAsync($"Unmuted {name}.", messageReference: arg.Reference);
+                        } else {
+                            await arg.Channel.SendMessageAsync($"Unmuted *VikingID {id}*.", messageReference: arg.Reference);
+                        }
+                    } else {
+                        await arg.Channel.SendMessageAsync("This user is not muted.", messageReference: arg.Reference);
+                    }
+                } else {
+                    await arg.Channel.SendMessageAsync("Input a valid vikingid!", messageReference: arg.Reference);
+                }
+            } else if (message[0] == "!ban") {
+                if (role < Role.Moderator) {
+                    await arg.Channel.SendMessageAsync("You don't have permission to use this!", messageReference: arg.Reference);
+                    return;
+                }
+                // ban command
+                if (message.Length > 1 && int.TryParse(message[1], out int id)) {
+                    string? name = null;
+                    foreach (Client player in FindViking(id)) {
+                        name = player.PlayerData.DiplayName;
+                        player.Banned = true;
+                        player.SetRoom(player.Room); // This will run the client through the 'if Banned' conditions.
+                    }
+                    if (Client.BannedList.TryGetValue(id, out string? rreason)) {
+                        string msg = "This user is already banned.";
+                        if (rreason != null && rreason.Length > 0) msg += " Reason: "+rreason;
+                        await arg.Channel.SendMessageAsync(msg, messageReference: arg.Reference);
+                    } else {
+                        string? reason = null;
+                        if (message.Length > 2) {
+                            reason = string.Join(' ', message, 2, message.Length - 2);
+                        }
+                        Client.BannedList.Add(id, reason);
+                        string msg = $"Banned *VikingID {id}*";
+                        if (name != null) msg = $"Banned {name}";
+                        if (reason != null) {
+                            msg += ". Reason: " + reason;
+                        }
+                        await arg.Channel.SendMessageAsync(msg, messageReference: arg.Reference);
+                    }
+                } else {
+                    await arg.Channel.SendMessageAsync("Input a valid vikingid!", messageReference: arg.Reference);
+                }
+            } else if (message[0] == "!unban" || message[0] == "!pardon") {
+                if (role < Role.Moderator) {
+                    await arg.Channel.SendMessageAsync("You don't have permission to use this!", messageReference: arg.Reference);
+                    return;
+                }
+                // unban command
+                if (message.Length > 1 && int.TryParse(message[1], out int id)) {
+                    if (Client.BannedList.Remove(id)) {
+                        string? playername = null;
+                        foreach (Room rooom in Room.AllRooms()) {
+                            foreach (Client player in rooom.Clients) {
+                                if (player.PlayerData.VikingId == id) {
+                                    playername = player.PlayerData.DiplayName;
+                                    player.Banned = false;
+                                    player.SetRoom(player.ReturnRoomOnPardon); // Put the player back.
+                                }
+                            }
+                        }
+                        if (playername != null) {
+                            await arg.Channel.SendMessageAsync($"Unbanned {playername}.", messageReference: arg.Reference);
+                        } else {
+                            await arg.Channel.SendMessageAsync($"Unbanned *VikingID {id}*.", messageReference: arg.Reference);
+                        }
+                    } else {
+                        await arg.Channel.SendMessageAsync("This user is not banned.", messageReference: arg.Reference);
+                    }
+                } else {
+                    await arg.Channel.SendMessageAsync("Input a valid vikingid!", messageReference: arg.Reference);
+                }
+            } else if (message[0] == "!mutelist") {
+                // mutelist command
+                if (Client.MutedList.Count > 0) {
+                    Dictionary<int, string> clients = new();
+                    foreach (Room rooom in Room.AllRooms()) {
+                        foreach (Client player in rooom.Clients) {
+                            int id = player.PlayerData.VikingId;
+                            if (Client.MutedList.ContainsKey(id)) {
+                                clients.TryAdd(id, player.PlayerData.DiplayName);
+                            }
+                        }
+                    }
+                    string msg = "Muted Players:";
+                    foreach (KeyValuePair<int, string?> play in Client.MutedList) {
+                        if (clients.TryGetValue(play.Key, out string? name)) {
+                            msg += $"\n* {SanitizeString(name ?? "")} ||VikingId: {play.Key}||";
+                        } else {
+                            msg += $"\n* *Offline Viking {play.Key}*";
+                        }
+                        if (play.Value != null) {
+                            msg += $"; Reason: {play.Value}";
+                        }
+                    }
+                    await arg.Channel.SendMessageAsync(msg, messageReference: arg.Reference);
+                } else {
+                    await arg.Channel.SendMessageAsync("No-one is muted.", messageReference: arg.Reference);
+                }
+            } else if (message[0] == "!banlist") {
+                // mutelist command
+                if (Client.BannedList.Count > 0) {
+                    Dictionary<int, string> clients = new();
+                    foreach (Room rooom in Room.AllRooms()) {
+                        foreach (Client player in rooom.Clients) {
+                            int id = player.PlayerData.VikingId;
+                            if (Client.BannedList.ContainsKey(id)) {
+                                clients.TryAdd(id, player.PlayerData.DiplayName);
+                            }
+                        }
+                    }
+                    string msg = "Banned Players:";
+                    foreach (KeyValuePair<int, string?> play in Client.BannedList) {
+                        if (clients.TryGetValue(play.Key, out string? name)) {
+                            msg += $"\n* {SanitizeString(name ?? "")} ||VikingId: {play.Key}||";
+                        } else {
+                            msg += $"\n* *Offline Viking {play.Key}*";
+                        }
+                        if (play.Value != null) {
+                            msg += $"; Reason: {play.Value}";
+                        }
+                    }
+                    await arg.Channel.SendMessageAsync(msg, messageReference: arg.Reference);
+                } else {
+                    await arg.Channel.SendMessageAsync("No-one is banned.", messageReference: arg.Reference);
+                }
+            } else if (roomChannel) {
+                if (room != null) {
+                    if (message[0] == "!help") {
+                        // help command (room ver.)
+                        await arg.Channel.SendMessageAsync(string.Join(Environment.NewLine+"* ", new string[] {
+                                "### List of commands:",
+                                "!help - Prints the help message. That's this message right here!",
+                                "!list - Lists all players in this room.",
+                                "!say <string... message> - Say something in this room."
+                            }.Concat(everywhereCommands)
+                        ));
+                    } else if (message[0] == "!list") {
+                        // list command (room ver.)
                         if (room.ClientsCount > 0) {
-                            string msg = "Players in Room:\n";
+                            string msg = "Players in Room:";
                             foreach (Client player in room.Clients) {
                                 string vikingid;
                                 if (player.PlayerData.VikingId != 0) {
@@ -161,19 +417,21 @@ class DiscordManager {
                                 } else {
                                     vikingid = "||(Not Authenticated!)||";
                                 }
-                                msg += $"* {SanitizeString(player.PlayerData.DiplayName)} {vikingid}\n";
+                                msg += $"\n* {SanitizeString(player.PlayerData.DiplayName)} {vikingid}";
+                                if (player.Muted) {
+                                    msg += " (:mute: Muted)";
+                                }
                             }
                             SendMessage(msg, room); // Sent like this in case it's longer than 2000 characters (handled by this method).
                         } else {
                             await arg.Channel.SendMessageAsync("This room is empty.", messageReference: arg.Reference);
                         }
-                    }
-                } else if (message[0] == "!say") {
-                    if (message.Length > 1) {
-                        // Due to client-based restrictions, this probably only works in SoD and maybe MaM.
-                        // Unless we want to create an MMOAvatar instance for the server "user".
-                        if (Room.Exists(arg.Channel.Name)) {
-                            Room room = Room.Get(arg.Channel.Name);
+                    } else if (message[0] == "!say") {
+                        // say command
+                        if (message.Length > 1) {
+                            // Due to client-based restrictions, this probably only works in SoD and maybe MaM.
+                            // Unless we want to create an MMOAvatar instance for the server "user".
+                            // This is because the code for chatlogging is tied to ChatBubble and only ChatBubble.
                             if (room.ClientsCount > 0) {
                                 room.Send(Utils.BuildChatMessage(Guid.Empty.ToString(), string.Join(' ', message, 1, message.Length-1), "Server"));
                                 await arg.AddReactionAsync(Emote.Parse(":white_check_mark:"));
@@ -181,14 +439,15 @@ class DiscordManager {
                                 await arg.Channel.SendMessageAsync("There is no-one in this room to see your message.", messageReference: arg.Reference);
                             }
                         } else {
-                            await arg.Channel.SendMessageAsync("This room is currently unloaded.", messageReference: arg.Reference);
+                            await arg.Channel.SendMessageAsync("You didn't include any message content!", messageReference: arg.Reference);
                         }
-                    } else {
-                        await arg.Channel.SendMessageAsync("You didn't include any message content!", messageReference: arg.Reference);
                     }
+                } else {
+                    await arg.Channel.SendMessageAsync("This room is currently unloaded.", messageReference: arg.Reference);
                 }
             } else {
                 if (message[0] == "!help") {
+                    // help command (global)
                     await arg.Channel.SendMessageAsync(string.Join(Environment.NewLine, new string[] {
                         "### List of commands:",
                         "!help - Prints the help message. That's this message right here!",
@@ -199,7 +458,8 @@ class DiscordManager {
                     .Append("*Using !help in a room thread yields a different set of commands. Try using !help in a room thread!*")
                     ));
                 } else if (message[0] == "!rooms") {
-                    IEnumerable<RestThreadChannel> threads = await channel.GetActiveThreadsAsync();
+                    // rooms command
+                    IEnumerable<RestThreadChannel> threads = await BotChannel.GetActiveThreadsAsync();
                     Console.WriteLine(threads.Count());
                     ulong uid = socketMessage.Author.Id;
                     foreach (RestThreadChannel thread in threads) {
@@ -211,10 +471,11 @@ class DiscordManager {
                         await ping.DeleteAsync();
                     }
                 } else if (message[0] == "!list") {
+                    // list command (global)
                     string msg = string.Empty;
-                    foreach (Room room in Room.AllRooms()) {
-                        foreach (Client player in room.Clients) {
-                            if (msg == string.Empty) msg = "Players Online:\n";
+                    foreach (Room rooom in Room.AllRooms()) {
+                        foreach (Client player in rooom.Clients) {
+                            if (msg == string.Empty) msg = "Players Online:";
                             
                             string vikingid;
                             if (player.PlayerData.VikingId != 0) {
@@ -222,7 +483,10 @@ class DiscordManager {
                             } else {
                                 vikingid = "||(Not Authenticated!)||";
                             }
-                            msg += $"* {SanitizeString(player.PlayerData.DiplayName)} {vikingid} ({room.Name})\n";
+                            msg += $"\n* {SanitizeString(player.PlayerData.DiplayName)} {vikingid} ({rooom.Name})";
+                            if (player.Muted) {
+                                msg += " (:mute: Muted)";
+                            }
                         }
                     }
                     if (msg == string.Empty) {
@@ -241,13 +505,14 @@ class DiscordManager {
     /// </summary>
     /// <param name="msg">Message to send</param>
     /// <param name="room">Room to send message in - can be null</param>
-    public static void SendMessage(string msg, Room? room=null) {
-        if (client != null) {
+    public static void SendMessage(string msg, Room? room=null, string? roomName=null) {
+        if (BotClient != null) {
             while (msg.Length > 0) {
                 string piece = msg;
                 if (msg.Length > 2000) { // Discord character limit is 2000.
-                    // Find a good place to break the message, if possible.
-                    int breakIndex = msg.LastIndexOfAny(new char[2] {' ','\n'}, 2000);
+                    // Find a good place to break the message, if possible. Otherwise revert to 2000.
+                    int breakIndex = msg.LastIndexOf('\n', 2000);
+                    if (breakIndex <= 0) breakIndex = msg.LastIndexOf(' ', 2000);
                     if (breakIndex <= 0) breakIndex = 2000;
                     // Split the first part of the message and recycle the rest.
                     piece = msg.Substring(0, breakIndex);
@@ -256,9 +521,10 @@ class DiscordManager {
                     // Exit the loop when the time comes.
                     msg = string.Empty;
                 }
-                queue.Enqueue(new QueuedMessage {
+                MessageQueue.Enqueue(new QueuedMessage {
                     msg = piece,
-                    room = room
+                    room = room,
+                    roomName = roomName ?? room?.Name
                 });
             }
         }
@@ -277,29 +543,41 @@ class DiscordManager {
     /// <param name="player">PlayerData to associate the message with - can be null</param>
     public static void SendPlayerBasedMessage(string msg, string surround="{1} **-->** {0}", Room? room=null, PlayerData? player=null) {
         try {
-            if (client != null) {
+            if (BotClient != null) {
                 // We need to sanitize things first so that people can't
                 // use Discord's formatting features inside a chat message.
                 msg = SanitizeString(msg);
                 string name = SanitizeString(player?.DiplayName ?? "");
 
+                // Define for merged rooms.
+                string? roomName = room?.Name;
+                if (roomName != null) {
+                    foreach (KeyValuePair<string, string[]> pair in Configuration.DiscordBotConfig!.Merges) {
+                        if (pair.Value.Contains(roomName)) {
+                            roomName = pair.Key;
+                            if (roomName != room!.Name) surround = $"({room!.Name}) "+surround;
+                            break;
+                        }
+                    }
+                }
+
                 if (player != null) {
                     if (player.VikingId != 0) {
-                        surround = "||VikingId: "+player.VikingId+"||\n"+surround;
+                        surround = $"||VikingId: {player.VikingId}||\n{surround}";
                     } else {
-                        surround = "||(Not Authenticated!)||\n"+surround;
+                        surround = $"||(Not Authenticated!)||\n{surround}";
                     }
                 }
 
                 // Send the sanitized message, headed with the viking id (if authenticated).
-                SendMessage(string.Format(surround, msg, name), room);
+                SendMessage(string.Format(surround, msg, name), room, roomName);
             }
         } catch (Exception e) {
             Log(e.ToString(), ConsoleColor.Red);
         }
     }
 
-    public static string SanitizeString(string str) {
+    private static string SanitizeString(string str) {
         string sanitizedStr = "";
         for (int i=0;i<str.Length;i++) {
             char c = str[i];
@@ -327,23 +605,36 @@ class DiscordManager {
         return sanitizedStr;
     }
 
-    class BotConfig {
-        [JsonPropertyName("// Token")]
-        private string __TokenComment { get; set; } = "This is your bot's token. DO NOT SHARE THIS WITH ANYBODY!!!";
-        public string Token { get; set; }
-
-        [JsonPropertyName("// Server")]
-        private string __ServerComment { get; set; } = "This is the Server ID that the bot connects to.";
-        public ulong Server { get; set; }
-
-        [JsonPropertyName("// Channel")]
-        private string __ChannelComment { get; set; } = "This is the Channel ID where bot logs things and can run admin commands from.";
-        public ulong Channel { get; set; }
+    /// <summary>
+    /// Search all rooms for a vikingid, or null if not found.
+    /// This method currently returns a list because multiple clients can log in with the same viking at once. This should get fixed properly in the future.
+    /// </summary>
+    /// <param name="id">Viking ID</param>
+    /// <returns>Clients for ID. If there are none then return an empty list.</returns>
+    private static IEnumerable<Client> FindViking(int id, Room? room=null) {
+        List<Client> clients = new();
+        if (room != null) {
+            foreach (Client player in room.Clients) {
+                if (player.PlayerData.VikingId == id) {
+                    clients.Add(player);
+                }
+            }
+            return clients;
+        }
+        foreach (Room rooom in Room.AllRooms()) {
+            foreach (Client player in rooom.Clients) {
+                if (player.PlayerData.VikingId == id) {
+                    clients.Add(player);
+                }
+            }
+        }
+        return clients;
     }
 
     private class QueuedMessage {
         public string msg;
         public Room? room;
+        public string? roomName;
     }
 
     private static void Log(string msg, ConsoleColor? color=null) {

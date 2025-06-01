@@ -15,8 +15,8 @@ class TempMuteCommand : IManagementCommand {
             client.Send(Utils.BuildServerSideMessage($"TempMute: user {arguments[0]} not found", "Server"));
             return;
         }
-        target.TempMuted = !target.TempMuted;
-        if (target.TempMuted)
+        target.Muted = !target.Muted;
+        if (target.Muted)
             client.Send(Utils.BuildServerSideMessage($"TempMute: {arguments[0]} has been temporarily muted", "Server"));
         else
             client.Send(Utils.BuildServerSideMessage($"TempMute: {arguments[0]} has been unmuted", "Server"));

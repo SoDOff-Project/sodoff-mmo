@@ -5,6 +5,7 @@ using System.Collections.Specialized;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 
@@ -12,6 +13,7 @@ namespace sodoffmmo.Core;
 internal static class Configuration {
 
     public static ServerConfiguration ServerConfiguration { get; private set; } = new ServerConfiguration();
+    public static DiscordBotConfig? DiscordBotConfig { get; private set; } = null;
 
     public static SortedDictionary<int, object> Emoticons = new();
     public static SortedDictionary<int, object> Actions = new();
@@ -33,15 +35,21 @@ internal static class Configuration {
             ServerConfiguration.Authentication = AuthenticationMode.Disabled;
         }
 
-        // Emoticons (the emojis that float above your head)
-        SortAndVersion(config.GetSection("Emoticons"), Emoticons);
-        // Actions (such as dances)
-        SortAndVersion(config.GetSection("Actions"), Actions);
-        // In EMD, there are seperate actions when in car that share IDs with normal actions.
-        // Since this is easy to check MMO-side (SPM uservar), we can just store these seperate
-        SortAndVersion(config.GetSection("EMDCarActions"), EMDCarActions);
-        // Canned Chat options (which can vary game to game)
-        SortAndVersion(config.GetSection("CannedChat"), CannedChat);
+        DiscordBotConfig = config.GetSection("DiscordBot").Get<DiscordBotConfig>();
+        if (DiscordBotConfig != null) {
+            // Emoticons (the emojis that float above your head)
+            SortAndVersion(config.GetSection("Emoticons"), Emoticons);
+
+            // Actions (such as dances)
+            SortAndVersion(config.GetSection("Actions"), Actions);
+
+            // In EMD, there are seperate actions when in car that share IDs with normal actions.
+            // Since this is easy to check MMO-side (SPM uservar), we can just store these seperate
+            SortAndVersion(config.GetSection("EMDCarActions"), EMDCarActions);
+
+            // Canned Chat options (which can vary game to game)
+            SortAndVersion(config.GetSection("CannedChat"), CannedChat);
+        }
     }
 
     // While version checking isn't exactly necessary for Actions when using vanilla files, it's nice to support it anyway.
@@ -95,6 +103,15 @@ internal sealed class ServerConfiguration {
     public AuthenticationMode Authentication { get; set; } = AuthenticationMode.Disabled;
     public string ApiUrl { get; set; } = "";
     public string BypassToken { get; set; } = "";
+}
+
+internal sealed class DiscordBotConfig {
+    public bool Disabled { get; set; }
+    public ulong Server { get; set; }
+    public ulong Channel { get; set; }
+    public ulong RoleModerator { get; set; }
+    public ulong RoleAdmin { get; set; }
+    public Dictionary<string, string[]> Merges { get; set; }
 }
 
 public enum AuthenticationMode {

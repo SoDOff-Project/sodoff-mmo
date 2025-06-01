@@ -79,10 +79,10 @@ public class Room {
     public static bool Exists(string name) => rooms.ContainsKey(name);
 
     public static Room Get(string name) => rooms[name];
-    
+
     public static Room GetOrAdd(string name, bool autoRemove = false) {
         lock(RoomsListLock) {
-            if (!Room.Exists(name)) 
+            if (!Room.Exists(name))
                 return new Room(name, autoRemove: autoRemove);
             return rooms[name];
         }
@@ -104,8 +104,13 @@ public class Room {
         NetworkObject obj = new();
         NetworkArray roomInfo = new();
         roomInfo.Add(Id);
-        roomInfo.Add(Name); // Room Name
-        roomInfo.Add(Group); // Group Name
+        if (Name.StartsWith("BannedUserRoom_")) {
+            roomInfo.Add("BannedUserRoom"); // Room Name
+            roomInfo.Add("BannedUserRoom"); // Group Name
+        } else {
+            roomInfo.Add(Name); // Room Name
+            roomInfo.Add(Group); // Group Name
+        }
         roomInfo.Add(true); // is game
         roomInfo.Add(false); // is hidden
         roomInfo.Add(false); // is password protected
@@ -136,8 +141,13 @@ public class Room {
 
         NetworkArray r1 = new();
         r1.Add(Id);
-        r1.Add(Name); // Room Name
-        r1.Add(Group); // Group Name
+        if (Name.StartsWith("BannedUserRoom_")) {
+            r1.Add("BannedUserRoom"); // Room Name
+            r1.Add("BannedUserRoom"); // Group Name
+        } else {
+            r1.Add(Name); // Room Name
+            r1.Add(Group); // Group Name
+        }
         r1.Add(true);
         r1.Add(false);
         r1.Add(false);
