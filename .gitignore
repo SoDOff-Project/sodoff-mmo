@@ -6,3 +6,4 @@ src/obj
 src/Properties
 src/sodoffmmo.csproj.user
 /src/discord_bot_token
+/muted_banned_users.json

@@ -94,7 +94,21 @@ class DiscordManager {
             socketMessage.Author.IsBot
         ) return;
         // Get the room if it exists.
-        Room? room = (roomChannel && Room.Exists(arg.Channel.Name)) ? Room.Get(arg.Channel.Name) : null;
+        Room[]? room = null;
+        string? roomName = null;
+        if (roomChannel) {
+            roomName = arg.Channel.Name;
+            if (Room.Exists(arg.Channel.Name)) {
+                room = new Room[1]{Room.Get(arg.Channel.Name)};
+            } else if (Configuration.DiscordBotConfig!.Merges.TryGetValue(arg.Channel.Name, out string[]? zones) && zones?.Length > 0) {
+                room = new Room[zones.Length];
+                for (int i=0;i<zones.Length;i++) {
+                    if (Room.Exists(zones[i])) {
+                        room[i] = Room.Get(zones[i]);
+                    }
+                }
+            }
+        }
 
         // Perms
         Role role = Role.User;
@@ -112,11 +126,11 @@ class DiscordManager {
                 // Denotes commands that work the same or similarly
                 // regardless of whether you're in a room thread.
                 "!freechat <bool: enabled> - Enable/Disable free chat in all rooms.",
-                "!tempmute <int: vikingid> [string... reason] - Mute someone (until they reconnect or go elsewhere).",
+                "!tempmute <int: vikingid> [string... reason] - Mute someone (until they reconnect).",
                 "!untempmute <int: vikingid> - Revoke a tempmute.",
-                "!mute <int: vikingid> [string... reason] - Mute a vikingid (currently forgotten after server restart due to technical restrictions, but this will probably be fixed in the future).",
+                "!mute <int: vikingid> [string... reason] - Mute a vikingid.",
                 "!unmute <int: vikingid> - Revoke a mute.",
-                "!ban <int: vikingid> [string... reason] - Ban a vikingid from MMO (currently forgotten after server restart due to technical restrictions, but this will probably be fixed in the future).",
+                "!ban <int: vikingid> [string... reason] - Ban a vikingid from MMO.",
                 "!unban <int: vikingid> - Revoke a ban.",
                 "!pardon <int: vikingid> - Alias for !unban",
                 "!mutelist - Get a list of muted users.",
@@ -130,15 +144,14 @@ class DiscordManager {
                 // freechat command
                 if (message.Length > 1) {
                     bool enable;
-                    if (!bool.TryParse(message[1], out enable)) {
-                        if ((message[1][0] & 0b11011111) == 'Y') {
-                            enable = true;
-                        } else if ((message[1][0] & 0b11011111) == (int)'N') {
-                            enable = false;
-                        } else {
-                            await arg.Channel.SendMessageAsync("Input a boolean or yes/no value!", messageReference: arg.Reference);
-                            return;
-                        }
+                    int val = message[1][0] & 0b11011111;
+                    if (val == 'Y' || val == 'T') {
+                        enable = true;
+                    } else if (val == 'N' || val == 'F') {
+                        enable = false;
+                    } else {
+                        await arg.Channel.SendMessageAsync("Input a boolean or yes/no value!", messageReference: arg.Reference);
+                        return;
                     }
                     Configuration.ServerConfiguration.EnableChat = enable;
                     await arg.Channel.SendMessageAsync($"Chat {(enable?"en":"dis")}abled!", messageReference: arg.Reference);
@@ -152,8 +165,7 @@ class DiscordManager {
                 }
                 // tempmute command
                 if (message.Length > 1 && int.TryParse(message[1], out int id)) {
-                    IEnumerable<Client> vikings = FindViking(id, room);
-                    if (room != null && !vikings.Any()) vikings = FindViking(id); // Plan B
+                    IEnumerable<Client> vikings = FindViking(id);
                     if (vikings.Any()) {
                         bool sent = false;
                         string? reason = null;
@@ -171,11 +183,11 @@ class DiscordManager {
                                 }
                             } else {
                                 player.Muted = true;
-                                string msg = $"Tempmuted {player.PlayerData.DiplayName}";
+                                string msg = $"Tempmuted {SanitizeString(player.PlayerData.DiplayName)}";
                                 if (reason != null) {
                                     msg += ". Reason: "+reason;
                                 }
-                                if (!sent) await arg.Channel.SendMessageAsync(msg, messageReference: arg.Reference);
+                                if (!sent) SendMessage(msg, roomName: roomName);
                             }
                             sent = true;
                         }
@@ -192,8 +204,7 @@ class DiscordManager {
                 }
                 // un-tempmute command
                 if (message.Length > 1 && int.TryParse(message[1], out int id)) {
-                    IEnumerable<Client> vikings = FindViking(id, room);
-                    if (room != null && !vikings.Any()) vikings = FindViking(id); // Plan B
+                    IEnumerable<Client> vikings = FindViking(id);
                     if (vikings.Any()) {
                         bool sent = false;
                         foreach (Client player in vikings) {
@@ -202,7 +213,7 @@ class DiscordManager {
                                     if (!sent) await arg.Channel.SendMessageAsync("This user is true muted. To unmute them, use !unmute", messageReference: arg.Reference);
                                 } else {
                                     player.Muted = false;
-                                    if (!sent) await arg.Channel.SendMessageAsync($"Un-tempmuted {player.PlayerData.DiplayName}.", messageReference: arg.Reference);
+                                    if (!sent) SendMessage($"Un-tempmuted {SanitizeString(player.PlayerData.DiplayName)}.", roomName: roomName);
                                 }
                             } else {
                                 if (!sent) await arg.Channel.SendMessageAsync("This user is not muted.", messageReference: arg.Reference);
@@ -223,10 +234,9 @@ class DiscordManager {
                 // true mute command
                 if (message.Length > 1 && int.TryParse(message[1], out int id)) {
                     string? name = null;
-                    IEnumerable<Client> vikings = FindViking(id, room);
-                    if (room != null && !vikings.Any()) vikings = FindViking(id); // Plan B
+                    IEnumerable<Client> vikings = FindViking(id);
                     foreach (Client player in vikings) {
-                        name = player.PlayerData.DiplayName;
+                        name = SanitizeString(player.PlayerData.DiplayName);
                         player.Muted = true;
                     }
                     if (Client.MutedList.TryGetValue(id, out string? rreason)) {
@@ -239,12 +249,13 @@ class DiscordManager {
                             reason = string.Join(' ', message, 2, message.Length - 2);
                         }
                         Client.MutedList.Add(id, reason);
+                        Client.SaveMutedBanned();
                         string msg = $"Muted *VikingID {id}*";
                         if (name != null) msg = $"Muted {name}";
                         if (reason != null) {
                             msg += ". Reason: " + reason;
                         }
-                        await arg.Channel.SendMessageAsync(msg, messageReference: arg.Reference);
+                        SendMessage(msg, roomName: roomName);
                     }
                 } else {
                     await arg.Channel.SendMessageAsync("Input a valid vikingid!", messageReference: arg.Reference);
@@ -257,19 +268,20 @@ class DiscordManager {
                 // unmute command
                 if (message.Length > 1 && int.TryParse(message[1], out int id)) {
                     string? name = null;
-                    IEnumerable<Client> vikings = FindViking(id, room);
-                    if (room != null && !vikings.Any()) vikings = FindViking(id); // Plan B
+                    IEnumerable<Client> vikings = FindViking(id);
                     if (vikings.Any()) {
                         foreach (Client player in vikings) {
                             if (player.Muted) {
-                                name = player.PlayerData.DiplayName;
+                                name = SanitizeString(player.PlayerData.DiplayName);
                                 player.Muted = false;
                             }
                         }
                     }
-                    if (Client.MutedList.Remove(id) || name != null) { // name is only set if there is an unmute
+                    bool listRemoved = Client.MutedList.Remove(id);
+                    if (listRemoved || name != null) { // name is only set if there is an unmute
+                        if (listRemoved) Client.SaveMutedBanned();
                         if (name != null) {
-                            await arg.Channel.SendMessageAsync($"Unmuted {name}.", messageReference: arg.Reference);
+                            SendMessage($"Unmuted {name}.", roomName: roomName);
                         } else {
                             await arg.Channel.SendMessageAsync($"Unmuted *VikingID {id}*.", messageReference: arg.Reference);
                         }
@@ -288,7 +300,7 @@ class DiscordManager {
                 if (message.Length > 1 && int.TryParse(message[1], out int id)) {
                     string? name = null;
                     foreach (Client player in FindViking(id)) {
-                        name = player.PlayerData.DiplayName;
+                        name = SanitizeString(player.PlayerData.DiplayName);
                         player.Banned = true;
                         player.SetRoom(player.Room); // This will run the client through the 'if Banned' conditions.
                     }
@@ -302,12 +314,13 @@ class DiscordManager {
                             reason = string.Join(' ', message, 2, message.Length - 2);
                         }
                         Client.BannedList.Add(id, reason);
+                        Client.SaveMutedBanned();
                         string msg = $"Banned *VikingID {id}*";
                         if (name != null) msg = $"Banned {name}";
                         if (reason != null) {
                             msg += ". Reason: " + reason;
                         }
-                        await arg.Channel.SendMessageAsync(msg, messageReference: arg.Reference);
+                        SendMessage(msg, roomName: roomName);
                     }
                 } else {
                     await arg.Channel.SendMessageAsync("Input a valid vikingid!", messageReference: arg.Reference);
@@ -320,18 +333,19 @@ class DiscordManager {
                 // unban command
                 if (message.Length > 1 && int.TryParse(message[1], out int id)) {
                     if (Client.BannedList.Remove(id)) {
+                        Client.SaveMutedBanned();
                         string? playername = null;
                         foreach (Room rooom in Room.AllRooms()) {
                             foreach (Client player in rooom.Clients) {
                                 if (player.PlayerData.VikingId == id) {
-                                    playername = player.PlayerData.DiplayName;
+                                    playername = SanitizeString(player.PlayerData.DiplayName);
                                     player.Banned = false;
                                     player.SetRoom(player.ReturnRoomOnPardon); // Put the player back.
                                 }
                             }
                         }
                         if (playername != null) {
-                            await arg.Channel.SendMessageAsync($"Unbanned {playername}.", messageReference: arg.Reference);
+                            SendMessage($"Unbanned {playername}.", roomName: roomName);
                         } else {
                             await arg.Channel.SendMessageAsync($"Unbanned *VikingID {id}*.", messageReference: arg.Reference);
                         }
@@ -364,7 +378,7 @@ class DiscordManager {
                             msg += $"; Reason: {play.Value}";
                         }
                     }
-                    await arg.Channel.SendMessageAsync(msg, messageReference: arg.Reference);
+                    SendMessage(msg, roomName: roomName);
                 } else {
                     await arg.Channel.SendMessageAsync("No-one is muted.", messageReference: arg.Reference);
                 }
@@ -391,7 +405,7 @@ class DiscordManager {
                             msg += $"; Reason: {play.Value}";
                         }
                     }
-                    await arg.Channel.SendMessageAsync(msg, messageReference: arg.Reference);
+                    SendMessage(msg, roomName: roomName);
                 } else {
                     await arg.Channel.SendMessageAsync("No-one is banned.", messageReference: arg.Reference);
                 }
@@ -408,21 +422,23 @@ class DiscordManager {
                         ));
                     } else if (message[0] == "!list") {
                         // list command (room ver.)
-                        if (room.ClientsCount > 0) {
+                        if (room.Sum(r => r.ClientsCount) > 0) {
                             string msg = "Players in Room:";
-                            foreach (Client player in room.Clients) {
-                                string vikingid;
-                                if (player.PlayerData.VikingId != 0) {
-                                    vikingid = "||VikingId: "+player.PlayerData.VikingId+"||";
-                                } else {
-                                    vikingid = "||(Not Authenticated!)||";
-                                }
-                                msg += $"\n* {SanitizeString(player.PlayerData.DiplayName)} {vikingid}";
-                                if (player.Muted) {
-                                    msg += " (:mute: Muted)";
+                            foreach (Room ro in room) {
+                                foreach (Client player in ro.Clients) {
+                                    string vikingid;
+                                    if (player.PlayerData.VikingId != 0) {
+                                        vikingid = "||VikingId: "+player.PlayerData.VikingId+"||";
+                                    } else {
+                                        vikingid = "||(Not Authenticated!)||";
+                                    }
+                                    msg += $"\n* {SanitizeString(player.PlayerData.DiplayName)} {vikingid}";
+                                    if (player.Muted) {
+                                        msg += " (:mute: Muted)";
+                                    }
                                 }
                             }
-                            SendMessage(msg, room); // Sent like this in case it's longer than 2000 characters (handled by this method).
+                            SendMessage(msg, roomName: roomName); // Sent like this in case it's longer than 2000 characters (handled by this method).
                         } else {
                             await arg.Channel.SendMessageAsync("This room is empty.", messageReference: arg.Reference);
                         }
@@ -432,8 +448,14 @@ class DiscordManager {
                             // Due to client-based restrictions, this probably only works in SoD and maybe MaM.
                             // Unless we want to create an MMOAvatar instance for the server "user".
                             // This is because the code for chatlogging is tied to ChatBubble and only ChatBubble.
-                            if (room.ClientsCount > 0) {
-                                room.Send(Utils.BuildChatMessage(Guid.Empty.ToString(), string.Join(' ', message, 1, message.Length-1), "Server"));
+                            bool sent = false;
+                            foreach (Room ro in room) {
+                                if (ro.ClientsCount > 0) {
+                                    ro.Send(Utils.BuildServerSideMessage(string.Join(' ', message, 1, message.Length-1), "Server"));
+                                    sent = true;
+                                }
+                            }
+                            if (sent) {
                                 await arg.AddReactionAsync(Emote.Parse(":white_check_mark:"));
                             } else {
                                 await arg.Channel.SendMessageAsync("There is no-one in this room to see your message.", messageReference: arg.Reference);
@@ -611,18 +633,10 @@ class DiscordManager {
     /// </summary>
     /// <param name="id">Viking ID</param>
     /// <returns>Clients for ID. If there are none then return an empty list.</returns>
-    private static IEnumerable<Client> FindViking(int id, Room? room=null) {
+    private static IEnumerable<Client> FindViking(int id) {
         List<Client> clients = new();
-        if (room != null) {
+        foreach (Room room in Room.AllRooms()) {
             foreach (Client player in room.Clients) {
-                if (player.PlayerData.VikingId == id) {
-                    clients.Add(player);
-                }
-            }
-            return clients;
-        }
-        foreach (Room rooom in Room.AllRooms()) {
-            foreach (Client player in rooom.Clients) {
                 if (player.PlayerData.VikingId == id) {
                     clients.Add(player);
                 }

@@ -3,6 +3,7 @@ using sodoffmmo.Management;
 using System;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 
 namespace sodoffmmo.Core;
 public class Client {
@@ -10,8 +11,26 @@ public class Client {
     static object lck = new();
 
                               // VikingId, Reason (nullable)
-    public static readonly Dictionary<int, string?> MutedList = new();
-    public static readonly Dictionary<int, string?> BannedList = new();
+    public static readonly Dictionary<int, string?> MutedList;
+    public static readonly Dictionary<int, string?> BannedList;
+
+    static Client() {
+        // Will get from run directory. This shouldn't really be a problem.
+        if (File.Exists("muted_banned_users.json")) {
+            try {
+                MutedBannedData? data = JsonSerializer.Deserialize<MutedBannedData>(File.ReadAllText("muted_banned_users.json"));
+                if (data != null) {
+                    MutedList = data.MutedList ?? new();
+                    BannedList = data.BannedList ?? new();
+                    return;
+                }
+            } catch {
+                Console.WriteLine("Data for Muted/Banned users wasn't read. Is it corrupted?");
+            }
+        }
+        MutedList = new();
+        BannedList = new();
+    }
 
     public int ClientID { get; private set; }
     public PlayerData PlayerData { get; set; } = new();
@@ -149,4 +168,18 @@ public class Client {
             return socket.Connected && !scheduledDisconnect;
         }
     }
+
+    public static void SaveMutedBanned() {
+        File.WriteAllText("muted_banned_users.json", JsonSerializer.Serialize(new MutedBannedData {
+            MutedList = MutedList,
+            BannedList = BannedList
+        }, new JsonSerializerOptions {
+             WriteIndented = true
+        }));
+    }
+}
+
+internal sealed class MutedBannedData {
+    public Dictionary<int, string?>? MutedList { get; set; }
+    public Dictionary<int, string?>? BannedList { get; set; }
 }
