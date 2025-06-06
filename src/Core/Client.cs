@@ -2,17 +2,45 @@
 using System;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 
 namespace sodoffmmo.Core;
 public class Client {
     static int id;
     static object lck = new();
 
+                                  // VikingId, Reason (nullable)
+    public static readonly Dictionary<int, string?> MutedList;
+    public static readonly Dictionary<int, string?> BannedList;
+    
+    static Client() { // Runs when Client class is loaded
+        if (File.Exists("muted_banned_users.json")) {
+            try {
+                MutedBannedData? data = JsonSerializer.Deserialize<MutedBannedData>(File.ReadAllText("muted_banned_users.json"));
+                if (data != null) {
+                    MutedList = data.MutedList ?? new();
+                    BannedList = data.BannedList ?? new();
+                    return;
+                }
+            } catch {
+                Console.WriteLine("Data for Muted/Banned users wasn't read. Is it corrupted?");
+            }
+        }
+        MutedList = new();
+        BannedList = new();
+    }
+
     public int ClientID { get; private set; }
     public PlayerData PlayerData { get; set; } = new();
     public Room? Room { get; private set; }
+    // Used by ban system for smooth unban transitions.
+    public Room? ReturnRoomOnPardon { get; private set; } = null;
     public bool OldApi { get; set; } = false;
+
     public bool TempMuted { get; set; } = false;
+    public bool RealMuted { get; set; } = false;
+    public bool Banned { get; set; } = false;
+    public bool Muted() => TempMuted || RealMuted || Banned;
 
     private readonly Socket socket;
     SocketBuffer socketBuffer = new();
@@ -51,7 +79,8 @@ public class Client {
             // set variable player data as not valid, but do not reset all player data
             PlayerData.IsValid = false;
 
-            if (Room != null) {
+            ReturnRoomOnPardon = room; // This is needed so that users are put where they're supposed to when being unbanned.
+            if (Room != null && (!Banned || room?.Name == "LIMBO" || !Room.Name.StartsWith("BannedUserRoom_"))) { // If user is in the ban room they're just fine exactly where they are.
                 Console.WriteLine($"Leave room: {Room.Name} (id={Room.Id}, size={Room.ClientsCount}) IID: {ClientID}");
                 Room.RemoveClient(this);
 
@@ -61,16 +90,32 @@ public class Client {
                 Room.Send(NetworkObject.WrapObject(0, 1004, data).Serialize());
             }
 
-            // set new room (null when SetRoom is used as LeaveRoom)
-            Room = room;
+            if (Banned && room?.Name != "LIMBO") {
+                if (room != null) {
+                    Room = Room.GetOrAdd("BannedUserRoom_" + ClientID, autoRemove: true);
+                    if (Room.Clients.Contains(this)) {
+                        Send(Room.RespondJoinRoom());
+                    } else {
+                        Room.AddClient(this);
+                    }
+                    Send(Room.SubscribeRoom());
+                } else {
+                    Room?.RemoveClient(this);
+                    Room = null;
+                }
+            } else {
+                // set new room (null when SetRoom is used as LeaveRoom)
+                Room = room;
 
-            if (Room != null) {
-                Console.WriteLine($"Join room: {Room.Name} RoomID (id={Room.Id}, size={Room.ClientsCount}) IID: {ClientID}");
-                Room.AddClient(this);
+                if (Room != null) {
+                    Console.WriteLine($"Join room: {Room.Name} RoomID (id={Room.Id}, size={Room.ClientsCount}) IID: {ClientID}");
+                    Room.AddClient(this);
 
-                Send(Room.SubscribeRoom());
-                if (Room.Name != "LIMBO") UpdatePlayerUserVariables(); // do not update user vars if room is limbo
+                    Send(Room.SubscribeRoom());
+                    if (Room.Name != "LIMBO") UpdatePlayerUserVariables(); // do not update user vars if room is limbo
+                }
             }
+
         }
     }
 
@@ -112,4 +157,17 @@ public class Client {
             return socket.Connected && !scheduledDisconnect;
         }
     }
+    public static void SaveMutedBanned() {
+        File.WriteAllText("muted_banned_users.json", JsonSerializer.Serialize(new MutedBannedData {
+            MutedList = MutedList,
+            BannedList = BannedList
+        }, new JsonSerializerOptions {
+             WriteIndented = true
+        }));
+    }
+}
+
+internal sealed class MutedBannedData {
+    public Dictionary<int, string?>? MutedList { get; set; }
+    public Dictionary<int, string?>? BannedList { get; set; }
 }
