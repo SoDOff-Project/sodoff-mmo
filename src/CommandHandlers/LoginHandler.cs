@@ -86,6 +86,11 @@ class LoginHandler : CommandHandler
             if (info.Authenticated) {
                 client.PlayerData.DiplayName = info.DisplayName;
                 client.PlayerData.Role = info.Role;
+                client.PlayerData.VikingId = info.Id;
+                if (info.Id != null) {
+                    client.RealMuted = Client.MutedList.ContainsKey((int)info.Id);
+                    client.Banned = Client.BannedList.ContainsKey((int)info.Id);
+                }
                 return true;
             }
         } catch (Exception ex) {
