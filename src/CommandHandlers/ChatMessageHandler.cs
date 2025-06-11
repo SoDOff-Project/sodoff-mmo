@@ -11,7 +11,7 @@ class ChatMessageHandler : CommandHandler {
         string message = receivedObject.Get<NetworkObject>("p").Get<string>("chm");
         if (ManagementCommandProcessor.ProcessCommand(message, client))
             return Task.CompletedTask;
-        if (client.Muted()) {
+        if (client.Muted) {
             ClientMuted(client);
             return Task.CompletedTask;
         }

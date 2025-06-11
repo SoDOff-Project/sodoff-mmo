@@ -17,14 +17,11 @@ class TempMuteCommand : IManagementCommand {
             return;
         }
 
-        if (target.RealMuted) {
-            client.Send(Utils.BuildServerSideMessage($"TempMute: {name} is already regular muted", "Server"));
+        if (target.Muted) {
+            client.Send(Utils.BuildServerSideMessage($"TempMute: {name} is already muted", "Server"));
         } else {
-            target.TempMuted = !target.TempMuted;
-            if (target.TempMuted)
-                client.Send(Utils.BuildServerSideMessage($"TempMute: {name} has been temporarily muted", "Server"));
-            else
-                client.Send(Utils.BuildServerSideMessage($"TempMute: {name} has been unmuted", "Server"));
+            target.Muted = true;
+            client.Send(Utils.BuildServerSideMessage($"TempMute: {name} has been temporarily muted", "Server"));
         }
     }
 }

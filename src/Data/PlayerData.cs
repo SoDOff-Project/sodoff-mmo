@@ -93,17 +93,15 @@ public class PlayerData {
         }
         
         // update the playername (sent with avatardata) if it changes
-        // this is also hit when the player joins the room
+        // this is also sent when the player joins the room
         if (varName == "A" && variables.GetValueOrDefault("A") != value) {
             try {
-                // Gonna surround this in a try/catch in case for some
-                // reason it breaks so that it doesn't break MMO.
                 string? name = JsonSerializer.Deserialize<AvatarData>(value)?.DisplayName;
                 if (name != null && name != DiplayName) {
                     DiplayName = name;
                 }
             }
-            catch (Exception) {} // Pokemon-style exception handling
+            catch (JsonException) {} // Don't break if the data is malformed or something.
         }
 
         // store in directory

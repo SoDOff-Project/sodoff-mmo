@@ -68,7 +68,7 @@ public class Room {
         }
     }
 
-    public void Send(NetworkPacket packet, Client? skip = null) {
+    public virtual void Send(NetworkPacket packet, Client? skip = null) {
         foreach (var roomClient in Clients) {
             if (roomClient != skip) {
                 roomClient.Send(packet);
@@ -100,18 +100,12 @@ public class Room {
         }
     }
 
-    public NetworkPacket RespondJoinRoom() {
+    public virtual NetworkPacket RespondJoinRoom() {
         NetworkObject obj = new();
         NetworkArray roomInfo = new();
         roomInfo.Add(Id);
-        if (Name.StartsWith("BannedUserRoom_")) {
-            // Send these fake names to the client.
-            roomInfo.Add("YouAreBanned"); // Room Name
-            roomInfo.Add("YouAreBanned"); // Group Name
-        } else {
-            roomInfo.Add(Name); // Room Name
-            roomInfo.Add(Group); // Group Name
-        }
+        roomInfo.Add(Name); // Room Name
+        roomInfo.Add(Group); // Group Name
         roomInfo.Add(true); // is game
         roomInfo.Add(false); // is hidden
         roomInfo.Add(false); // is password protected
@@ -136,20 +130,14 @@ public class Room {
         return packet;
     }
 
-    public NetworkPacket SubscribeRoom() {
+    public virtual NetworkPacket SubscribeRoom() {
         NetworkObject obj = new();
         NetworkArray list = new();
 
         NetworkArray r1 = new();
         r1.Add(Id);
-        if (Name.StartsWith("BannedUserRoom_")) {
-            // Send these fake names to the client.
-            r1.Add("YouAreBanned"); // Room Name
-            r1.Add("YouAreBanned"); // Group Name
-        } else {
-            r1.Add(Name); // Room Name
-            r1.Add(Group); // Group Name
-        }
+        r1.Add(Name); // Room Name
+        r1.Add(Group); // Group Name
         r1.Add(true);
         r1.Add(false);
         r1.Add(false);
