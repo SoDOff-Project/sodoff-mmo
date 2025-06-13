@@ -1,7 +1,10 @@
 ﻿using sodoffmmo.Data;
+using sodoffmmo.Management;
 using System;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
+using System.Xml.Linq;
 
 namespace sodoffmmo.Core;
 public class Client {
@@ -12,7 +15,9 @@ public class Client {
     public PlayerData PlayerData { get; set; } = new();
     public Room? Room { get; private set; }
     public bool OldApi { get; set; } = false;
-    public bool TempMuted { get; set; } = false;
+
+    public bool Muted { get; set; } = false;
+    public bool Banned { get; set; } = false;
 
     private readonly Socket socket;
     SocketBuffer socketBuffer = new();
@@ -47,6 +52,14 @@ public class Client {
     }
 
     public void SetRoom(Room? room) {
+        if (Banned && room != null) {
+            if (Room == PunishmentManager.BanRoom) {
+                PunishmentManager.BanRoom.UpdateClient(this); // This is needed for every time the client changes scene.
+                return;
+            }
+            room = PunishmentManager.BanRoom;
+        }
+
         lock(clientLock) {
             // set variable player data as not valid, but do not reset all player data
             PlayerData.IsValid = false;

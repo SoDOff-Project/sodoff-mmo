@@ -68,7 +68,7 @@ public class Room {
         }
     }
 
-    public void Send(NetworkPacket packet, Client? skip = null) {
+    public virtual void Send(NetworkPacket packet, Client? skip = null) {
         foreach (var roomClient in Clients) {
             if (roomClient != skip) {
                 roomClient.Send(packet);
@@ -100,7 +100,7 @@ public class Room {
         }
     }
 
-    public NetworkPacket RespondJoinRoom() {
+    public virtual NetworkPacket RespondJoinRoom() {
         NetworkObject obj = new();
         NetworkArray roomInfo = new();
         roomInfo.Add(Id);
@@ -130,7 +130,7 @@ public class Room {
         return packet;
     }
 
-    public NetworkPacket SubscribeRoom() {
+    public virtual NetworkPacket SubscribeRoom() {
         NetworkObject obj = new();
         NetworkArray list = new();
 

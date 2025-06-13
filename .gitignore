@@ -5,3 +5,4 @@ src/bin
 src/obj
 src/Properties
 src/sodoffmmo.csproj.user
+/muted_banned_users.json

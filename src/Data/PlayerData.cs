@@ -2,6 +2,7 @@
 using System.Globalization;
 using sodoffmmo.Core;
 using sodoffmmo.Management;
+using System.Text.Json;
 
 namespace sodoffmmo.Data;
 public class PlayerData {
@@ -37,6 +38,7 @@ public class PlayerData {
 
     public string DiplayName { get; set; } = "placeholder";
     public Role Role { get; set; } = Role.User;
+    public int? VikingId { get; set; }
 
     public long last_ue_time { get; set; } = 0;
 
@@ -88,6 +90,18 @@ public class PlayerData {
         // fix variable value before store
         if (varName == "FP") {
             value = FixMountState(value);
+        }
+        
+        // update the playername (sent with avatardata) if it changes
+        // this is also sent when the player joins the room
+        if (varName == "A" && variables.GetValueOrDefault("A") != value) {
+            try {
+                string? name = JsonSerializer.Deserialize<AvatarData>(value)?.DisplayName;
+                if (name != null && name != DiplayName) {
+                    DiplayName = name;
+                }
+            }
+            catch (JsonException) {} // Don't break if the data is malformed or something.
         }
 
         // store in directory
