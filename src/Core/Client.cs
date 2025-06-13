@@ -4,12 +4,12 @@ using System;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Xml.Linq;
 
 namespace sodoffmmo.Core;
 public class Client {
     static int id;
     static object lck = new();
-    protected static List<Client> clients = new();
 
     public int ClientID { get; private set; }
     public PlayerData PlayerData { get; set; } = new();
@@ -28,14 +28,7 @@ public class Client {
         socket = clientSocket;
         lock (lck) {
             ClientID = ++id;
-            clients.Add(this);
         }
-    }
-
-    public int TotalClientCount => clients.Count;
-
-    public static Client[] GetAllClients() {
-        return clients.ToArray();
     }
 
     public async Task Receive() {
@@ -72,7 +65,7 @@ public class Client {
             PlayerData.IsValid = false;
 
             if (Room != null) {
-                if (Room is not BanRoom) Console.WriteLine($"Leave room: {Room.Name} (id={Room.Id}, size={Room.ClientsCount}) IID: {ClientID}");
+                Console.WriteLine($"Leave room: {Room.Name} (id={Room.Id}, size={Room.ClientsCount}) IID: {ClientID}");
                 Room.RemoveClient(this);
 
                 NetworkObject data = new();
@@ -85,7 +78,7 @@ public class Client {
             Room = room;
 
             if (Room != null) {
-                if (Room is not BanRoom) Console.WriteLine($"Join room: {Room.Name} RoomID (id={Room.Id}, size={Room.ClientsCount}) IID: {ClientID}");
+                Console.WriteLine($"Join room: {Room.Name} RoomID (id={Room.Id}, size={Room.ClientsCount}) IID: {ClientID}");
                 Room.AddClient(this);
 
                 Send(Room.SubscribeRoom());
@@ -110,9 +103,6 @@ public class Client {
     }
 
     public void Disconnect() {
-        lock (lck) {
-            clients.Remove(this);
-        }
         try {
             socket.Shutdown(SocketShutdown.Both);
         } finally {
@@ -128,11 +118,6 @@ public class Client {
             Room.RemoveClient(this);
         }
         scheduledDisconnect = true;
-    }
-
-    public void Ban() {
-        Banned = true;
-        SetRoom(PunishmentManager.BanRoom);
     }
 
     public bool Connected {
