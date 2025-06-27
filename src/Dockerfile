@@ -1,5 +1,5 @@
 # Use the official .NET SDK image for building the application
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy the source code
@@ -9,7 +9,7 @@ COPY . .
 RUN dotnet build -c Release -o /app
 
 # Create clean run environment (without source and sdk)
-# FROM mcr.microsoft.com/dotnet/runtime:6.0 AS base
+# FROM mcr.microsoft.com/dotnet/runtime:9.0 AS base
 # WORKDIR /app
 # COPY --from=build /app .
 
