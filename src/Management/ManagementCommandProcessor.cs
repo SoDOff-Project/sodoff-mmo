@@ -42,7 +42,7 @@ public class ManagementCommandProcessor {
 
             if (commands.TryGetValue(new Tuple<string, Role>(commandName, currentRole), out Type? commandType)) {
                 IManagementCommand command = (IManagementCommand)Activator.CreateInstance(commandType)!;
-                Console.WriteLine($"Management command {commandName} by {client.PlayerData.DiplayName} ({client.PlayerData.Uid}) in {client.Room.Name}");
+                Console.WriteLine($"Management command {commandName} by {client.PlayerData.VikingName} ({client.PlayerData.Uid}) in {client.Room.Name}");
                 command.Handle(client, arguments);
                 return true;
             }
