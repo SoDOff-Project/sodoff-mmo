@@ -43,6 +43,7 @@ internal sealed class ServerConfiguration {
     public int RacingMainLobbyTimer { get; set; } = 15;
     public int PingDelay { get; set; } = 17;
     public bool EnableChat { get; set; } = true;
+    public bool EnableCannedChat { get; set; } = true;
     public bool AllowChaos { get; set; } = false;
     public AuthenticationMode Authentication { get; set; } = AuthenticationMode.Disabled;
     public string ApiUrl { get; set; } = "";
