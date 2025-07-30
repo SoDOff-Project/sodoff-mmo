@@ -59,7 +59,8 @@ public class PlayerData {
         "P",   // position vector (older games)
         "R",   // rotation (older games - updated via SUV, not SPV)
         "F",   // flags (older games - updated via SUV, not SPV)
-        "UTI", // group/clan
+        "UTI", // group/clan (EMD)
+        "CLU", // group/clan (newer)
         "SPM", // drive mode (Eat My Dust)
         "H",   // health
     };
