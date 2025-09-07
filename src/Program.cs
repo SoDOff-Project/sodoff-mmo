@@ -3,6 +3,7 @@ using sodoffmmo.Core;
 using System.Net;
 
 Configuration.Initialize();
+ChatFilter.Initialize();
 
 Server server;
 
