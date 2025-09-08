@@ -38,7 +38,7 @@ class ChatMessageHandler : CommandHandler {
                 Console.WriteLine("Banned message from " + client.PlayerData.Uid + " (" + client.PlayerData.DiplayName + "): \"" + messageFilter + "\", \"" + message + "\" in game: " + client.PlayerData.ZoneName);
                 ClientFilter(client);
                 if (!ChatFilter.ChatFilterConfiguration.blockedMessage.Equals(""))
-                    Chat(client, ChatFilter.ChatFilterConfiguration.blockedMessage);//This replaces the user's message with the message in the string. TODO: Add the string to the chatfilter json for the purpose of customization (How do I do that)
+                    Chat(client, ChatFilter.ChatFilterConfiguration.blockedMessage);//This replaces the user's message with the message in the string.
                 return Task.CompletedTask;
             }
         }
@@ -48,6 +48,7 @@ class ChatMessageHandler : CommandHandler {
             ChatDisabled(client);
         }
         else
+
         {
             Console.WriteLine("Message from " + client.PlayerData.Uid + " (" + client.PlayerData.DiplayName + "): \"" + messageFilter + "\", \"" + message + "\" in game: " + client.PlayerData.ZoneName);
             Chat(client, message);
