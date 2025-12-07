@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using sodoffmmo.Data;
 
 namespace sodoffmmo.Core;
@@ -19,7 +18,6 @@ public class Room {
 
     public bool AllowChatOverride { get; set; } = false;
     public NetworkArray RoomVariables = new();
-    public readonly Stopwatch ElapsedTime = new Stopwatch();
 
     public Room(string? name, string? group = null, bool autoRemove = false) {
         Id = ++MaxId;
@@ -35,7 +33,6 @@ public class Room {
         }
         AutoRemove = autoRemove;
         rooms.Add(Name, this);
-        ElapsedTime.Start();
     }
 
     public int ClientsCount => clients.Count;

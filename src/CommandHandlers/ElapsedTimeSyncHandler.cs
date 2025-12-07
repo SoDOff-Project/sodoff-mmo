@@ -10,7 +10,7 @@ class ElapsedTimeSyncHandler : CommandHandler {
         if (client.Room != null) {
             NetworkObject cmd = new();
             NetworkObject obj = new();
-            obj.Add("arr", new string[] { "RTM", "-1", client.Room.ElapsedTime.ElapsedMilliseconds.ToString() });
+            obj.Add("arr", new string[] { "RTM", "-1", Runtime.CurrentRuntime.ToString() });
             cmd.Add("c", "RTM");
             cmd.Add("p", obj);
             client.Send(NetworkObject.WrapObject(1, 13, cmd).Serialize());
