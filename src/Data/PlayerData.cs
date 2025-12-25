@@ -2,6 +2,7 @@
 using System.Globalization;
 using sodoffmmo.Core;
 using sodoffmmo.Management;
+using System.Text.Json;
 
 namespace sodoffmmo.Data;
 public class PlayerData {
@@ -35,7 +36,13 @@ public class PlayerData {
     // animation bitfield (animations used by avatar, e.g. mounted, swim, ...)
     public int Mbf { get; set; }
 
-    public string DiplayName { get; set; } = "placeholder";
+    // Name of player used by MMO
+    public string DisplayName { get; set; } = "placeholder";
+    // Name of player from API database
+    public string VikingName { get; set; } = "";
+    // ID of player from API database, zero for not authenticated players
+    public int VikingId { get; set; } = 0;
+    // role of player for management
     public Role Role { get; set; } = Role.User;
 
     public long last_ue_time { get; set; } = 0;
@@ -88,6 +95,18 @@ public class PlayerData {
         // fix variable value before store
         if (varName == "FP") {
             value = FixMountState(value);
+        }
+
+        // update the playername (sent with avatardata) if it changes
+        // this is also sent when the player joins the room
+        if (varName == "A" && variables.GetValueOrDefault("A") != value) {
+            try {
+                string? name = JsonSerializer.Deserialize<AvatarData>(value)?.DisplayName;
+                if (name != null && name != DisplayName) {
+                    DisplayName = name;
+                }
+            }
+            catch (JsonException) {} // Don't break if the data is malformed or something.
         }
 
         // store in directory

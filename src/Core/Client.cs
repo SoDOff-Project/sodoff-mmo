@@ -12,7 +12,8 @@ public class Client {
     public PlayerData PlayerData { get; set; } = new();
     public Room? Room { get; private set; }
     public bool OldApi { get; set; } = false;
-    public bool TempMuted { get; set; } = false;
+
+    public bool Muted { get; set; } = false;
 
     private readonly Socket socket;
     SocketBuffer socketBuffer = new();

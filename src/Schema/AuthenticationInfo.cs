@@ -8,7 +8,10 @@ public class AuthenticationInfo {
     public bool Authenticated { get; set; }
 
     [XmlElement]
-    public string DisplayName { get; set; }
+    public int Id { get; set; }
+
+    [XmlElement]
+    public string VikingName { get; set; }
 
     [XmlElement]
     public Role Role { get; set; }
