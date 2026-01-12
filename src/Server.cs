@@ -7,16 +7,24 @@ using System.Net.Sockets;
 
 namespace sodoffmmo;
 public class Server {
+    static object lck = new();
+    static readonly List<Client> clients = new();
 
     readonly int port;
     readonly IPAddress ipAddress;
     readonly bool IPv6AndIPv4;
     ModuleManager moduleManager = new();
 
+    public static int TotalClientCount => clients.Count;
+
     public Server(IPAddress ipAdress, int port, bool IPv6AndIPv4) {
         this.ipAddress = ipAdress;
         this.port = port;
         this.IPv6AndIPv4 = IPv6AndIPv4;
+    }
+
+    public static Client[] GetAllClients() {
+        return clients.ToArray();
     }
 
     public async Task Run() {
@@ -47,6 +55,7 @@ public class Server {
 
     private async Task HandleClient(Socket handler) {
         Client client = new(handler);
+        lock (lck) clients.Add(client);
         try {
             while (client.Connected) {
                 await client.Receive();
@@ -60,6 +69,7 @@ public class Server {
             try {
                 client.SetRoom(null);
             } catch (Exception) { }
+            lock (lck) clients.Remove(client);
             client.Disconnect();
             Console.WriteLine("Socket disconnected IID: " + client.ClientID);
         }

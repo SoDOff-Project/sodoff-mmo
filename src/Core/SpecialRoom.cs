@@ -90,7 +90,7 @@ public class SpecialRoom : Room {
             Console.WriteLine("Started event " +alert + " in room " + Name);
         } else {
             specificClient.Send(packet);
-            Console.WriteLine("Added " + specificClient.PlayerData.DiplayName + " to event " + alert + " with " + duration + " seconds remaining");
+            Console.WriteLine("Added " + specificClient.PlayerData.DisplayName + " to event " + alert + " with " + duration + " seconds remaining");
         }
     }
 

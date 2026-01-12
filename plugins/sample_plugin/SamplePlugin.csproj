@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <AssemblyName>SamplePlugin</AssemblyName>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Lib.Harmony" Version="2.3.6" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Reference Include="sodoffmmo">
+      <HintPath>../../src/bin/Debug/net6.0/sodoffmmo.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>
