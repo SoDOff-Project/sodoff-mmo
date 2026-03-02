@@ -43,7 +43,7 @@ internal static class DataDecoder {
         => new DataWrapper(NetworkDataType.DoubleArray, DecodeTypedArray(data, d => d.ReadDouble()));
 
     internal static DataWrapper DecodeStringArray(NetworkData data)
-        => new DataWrapper(NetworkDataType.IntArray, DecodeTypedArray(data, d => d.ReadString()));
+        => new DataWrapper(NetworkDataType.StringArray, DecodeTypedArray(data, d => d.ReadString()));
 
     private static T[] DecodeTypedArray<T>(NetworkData data, Func<NetworkData, T> readFunction) {
         short length = data.ReadShort();
