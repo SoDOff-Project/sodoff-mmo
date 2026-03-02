@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Buffers.Binary;
+using System.Text;
 
 namespace sodoffmmo.Data;
 public class NetworkData {
@@ -46,35 +47,41 @@ public class NetworkData {
     }
 
     public short ReadShort() {
-        byte[] arr = ReverseOrder(ReadChunk(2));
-        return BitConverter.ToInt16(arr);
+        short value = BinaryPrimitives.ReadInt16BigEndian(data.AsSpan(offset, 2));
+        offset += 2;
+        return value;
     }
 
     public ushort ReadUShort() {
-        byte[] arr = ReverseOrder(ReadChunk(2));
-        return BitConverter.ToUInt16(arr);
+        ushort value = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(offset, 2));
+        offset += 2;
+        return value;
     }
 
     public bool ReadBool() => data[offset++] == 1;
 
     public int ReadInt() {
-        byte[] arr = ReverseOrder(ReadChunk(4));
-        return BitConverter.ToInt32(arr);
+        int value = BinaryPrimitives.ReadInt32BigEndian(data.AsSpan(offset, 4));
+        offset += 4;
+        return value;
     }
 
     public long ReadLong() {
-        byte[] arr = ReverseOrder(ReadChunk(8));
-        return BitConverter.ToInt64(arr);
+        long value = BinaryPrimitives.ReadInt64BigEndian(data.AsSpan(offset, 8));
+        offset += 8;
+        return value;
     }
 
     public float ReadFloat() {
-        byte[] arr = ReverseOrder(ReadChunk(4));
-        return BitConverter.ToSingle(arr);
+        float value = BinaryPrimitives.ReadSingleBigEndian(data.AsSpan(offset, 4));
+        offset += 4;
+        return value;
     }
 
     public double ReadDouble() {
-        byte[] arr = ReverseOrder(ReadChunk(8));
-        return BitConverter.ToDouble(arr);
+        double value = BinaryPrimitives.ReadDoubleBigEndian(data.AsSpan(offset, 8));
+        offset += 8;
+        return value;
     }
 
     public string ReadString() {
