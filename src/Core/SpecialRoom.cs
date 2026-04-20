@@ -3,6 +3,7 @@ using sodoffmmo.Data;
 namespace sodoffmmo.Core;
 
 public class SpecialRoom : Room {
+    public AmbassadorConfiguration? ambassadorConfig;
     public double[] ambassadorGauges = new double[3]; // There is always a maximum of 3.
     System.Timers.Timer? ambassadorTimer;
 
@@ -20,26 +21,34 @@ public class SpecialRoom : Room {
             }
         }
 
-        foreach (var room in Configuration.ServerConfiguration.AmbassadorRooms) {
+        foreach (var datapair in Configuration.ServerConfiguration.AmbassadorRooms) {
+            string room = datapair.Key;
             Console.WriteLine($"Setup Ambassador for {room}");
-            (rooms.GetValueOrDefault(room) as SpecialRoom ?? new SpecialRoom(room)).InitAmbassador();
+            (rooms.GetValueOrDefault(room) as SpecialRoom ?? new SpecialRoom(room)).InitAmbassador(datapair.Value);
         }
     }
 
     public SpecialRoom(string name) : base(name) {}
 
-    public void InitAmbassador() {
-        for (int i=0;i<3;i++) ambassadorGauges[i] = Configuration.ServerConfiguration.AmbassadorGaugeStart;
-        ambassadorTimer = new(Configuration.ServerConfiguration.AmbassadorGaugeDecayRate * 1000) {
-            AutoReset = true,
-            Enabled = true
-        };
-        ambassadorTimer.Elapsed += (sender, e) => {
-            if (!Configuration.ServerConfiguration.AmbassadorGaugeDecayOnlyWhenInRoom || ClientsCount > 0) {
-                for (int i=0;i<3;i++) ambassadorGauges[i] = Math.Max(0, ambassadorGauges[i]-1);
-                Send(Utils.VlNetworkPacket(GetRoomVars(), Id));
-            }
-        };
+    public void InitAmbassador(AmbassadorConfiguration config) {
+        this.ambassadorConfig = config;
+        for (int i=0;i<this.ambassadorGauges.Length;i++) this.ambassadorGauges[i] = config.GaugeStart;
+        if (config.GaugeDecayRate > 0) {
+            this.ambassadorTimer = new(config.GaugeDecayRate * 1000) {
+                AutoReset = true,
+                Enabled = true
+            };
+            this.ambassadorTimer.Elapsed += (sender, e) => {
+                if (!config.GaugeDecayOnlyWhenInRoom || ClientsCount > 0) {
+                    for (int i=0;i<this.ambassadorGauges.Length;i++) {
+                        if (this.ambassadorGauges[i] > 0) {
+                            this.ambassadorGauges[i]--;
+                            Send(Utils.VlNetworkPacket(GetRoomVars(), Id));
+                        }
+                    }
+                }
+            };
+        }
     }
 
     internal override NetworkArray GetRoomVars() {

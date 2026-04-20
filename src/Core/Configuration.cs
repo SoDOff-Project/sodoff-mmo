@@ -33,11 +33,7 @@ internal sealed class ServerConfiguration {
     public int EventTimer { get; set; } = 30;
     public int FirstEventTimer { get; set; } = 10;
     public Dictionary<string, string[][]> RoomAlerts { get; set; } = new();
-    public string[] AmbassadorRooms { get; set; } = Array.Empty<string>();
-    public int AmbassadorGaugeStart { get; set; } = 75;
-    public float AmbassadorGaugeDecayRate { get; set; } = 60;
-    public bool AmbassadorGaugeDecayOnlyWhenInRoom { get; set; } = true;
-    public float AmbassadorGaugePlayers { get; set; } = 0.5f;
+    public Dictionary<string, AmbassadorConfiguration> AmbassadorRooms { get; set; } = new();
     public int RacingMaxPlayers { get; set; } = 6;
     public int RacingMinPlayers { get; set; } = 2;
     public int RacingMainLobbyTimer { get; set; } = 15;
@@ -52,4 +48,13 @@ internal sealed class ServerConfiguration {
 
 public enum AuthenticationMode {
     Disabled, Optional, RequiredForChat, Required
+}
+
+public class AmbassadorConfiguration {
+    public int GaugeStart { get; set; } = 75;
+    public int GaugeMax { get; set; } = 100;
+    public float GaugeDecayRate { get; set; } = 60;
+    public bool GaugeDecayOnlyWhenInRoom { get; set; } = true;
+    public float GaugePlayers { get; set; } = 0.5f;
+    public bool ResetOnMaxReached { get; set; } = false;
 }
