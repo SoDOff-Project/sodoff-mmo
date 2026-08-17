@@ -116,6 +116,24 @@ public class Server {
                         }
                     }
                     context.Response.StatusCode = 200;
+                } else if (context.Request.Url!.AbsolutePath == "/Admin/GetBuddyLocation") {
+                    string? uid = context.Request.QueryString["uid"];
+                    string response = "";
+                    if (!string.IsNullOrEmpty(uid)) {
+                        foreach (var room in Room.AllRooms()) {
+                            foreach (var client in room.Clients) {
+                                if (client.PlayerData?.Uid == uid) {
+                                    response = room.Name + "|" + room.Id + "|" + client.ClientID;
+                                    break;
+                                }
+                            }
+                            if (response != "") break;
+                        }
+                    }
+                    var buffer = System.Text.Encoding.UTF8.GetBytes(response);
+                    context.Response.StatusCode = 200;
+                    context.Response.ContentLength64 = buffer.Length;
+                    await context.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
                 } else {
                     context.Response.StatusCode = 404;
                 }
