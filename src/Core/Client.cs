@@ -1,4 +1,5 @@
-﻿using sodoffmmo.Data;
+using sodoffmmo.Data;
+using sodoffmmo.Management;
 using System;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -128,6 +129,7 @@ public class Client {
             //  - full remove will be will take place Server.HandleClient (before real disconnected)
             Room.RemoveClient(this);
         }
+        NotifyOnlineStatus(false);
         scheduledDisconnect = true;
     }
 
@@ -135,5 +137,19 @@ public class Client {
         get {
             return socket.Connected && !scheduledDisconnect;
         }
+    }
+
+    public void NotifyOnlineStatus(bool isOnline) {
+        if (string.IsNullOrEmpty(PlayerData.Uid)) return;
+        try {
+            HttpClient httpClient = new();
+            var content = new FormUrlEncodedContent(
+                new Dictionary<string, string> {
+                    { "vikingId", PlayerData.Uid },
+                    { "isOnline", isOnline.ToString() },
+            });
+            httpClient.Timeout = new TimeSpan(0, 0, 3);
+            _ = httpClient.PostAsync($"{Configuration.ServerConfiguration.ApiUrl}/Internal/SetOnlineStatus", content);
+        } catch { }
     }
 }

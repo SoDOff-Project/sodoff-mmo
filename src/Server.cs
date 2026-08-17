@@ -1,4 +1,4 @@
-﻿using sodoffmmo.Core;
+using sodoffmmo.Core;
 using sodoffmmo.Data;
 using sodoffmmo.Management;
 using System;
@@ -20,6 +20,7 @@ public class Server {
     }
 
     public async Task Run() {
+        _ = Task.Run(() => ListenHttpAdmin());
         moduleManager.RegisterModules();
         ManagementCommandProcessor.Initialize();
         using Socket listener = new(ipAddress.AddressFamily,
@@ -60,6 +61,7 @@ public class Server {
             try {
                 client.SetRoom(null);
             } catch (Exception) { }
+            client.NotifyOnlineStatus(false);
             client.Disconnect();
             Console.WriteLine("Socket disconnected IID: " + client.ClientID);
         }
@@ -81,6 +83,47 @@ public class Server {
                     await task;
             } catch (Exception ex) {
                 Console.WriteLine($"Exception IID: {client.ClientID} - {ex}");
+            }
+        }
+    }
+
+    private async Task ListenHttpAdmin() {
+        HttpListener listener = new HttpListener();
+        listener.Prefixes.Add("http://localhost:9934/");
+        listener.Start();
+        Console.WriteLine("MMO Admin HTTP Server listening on port 9934");
+        while (true) {
+            HttpListenerContext context = await listener.GetContextAsync();
+            try {
+                if (context.Request.Url!.AbsolutePath == "/Admin/SendBuddyEvent") {
+                    string? uid = context.Request.QueryString["uid"];
+                    string? fromUid = context.Request.QueryString["fromUid"];
+                    string? cmdType = context.Request.QueryString["cmdType"];
+
+                    if (!string.IsNullOrEmpty(uid)) {
+                        Console.WriteLine($"Sending SBE to user {uid} from {fromUid} cmd {cmdType}");
+                        foreach (var room in Room.AllRooms()) {
+                            foreach (var client in room.Clients) {
+                                if (client.PlayerData?.Uid == uid) {
+                                    sodoffmmo.Data.NetworkObject cmd = new sodoffmmo.Data.NetworkObject();
+                                    cmd.Add("c", "SBE");
+                                    sodoffmmo.Data.NetworkObject payload = new sodoffmmo.Data.NetworkObject();
+                                    payload.Add("arr", new string[] { "SBE", "", fromUid ?? "", uid, cmdType ?? "0" });
+                                    cmd.Add("p", payload);
+                                    client.Send(sodoffmmo.Data.NetworkObject.WrapObject(1, 13, cmd).Serialize());
+                                }
+                            }
+                        }
+                    }
+                    context.Response.StatusCode = 200;
+                } else {
+                    context.Response.StatusCode = 404;
+                }
+            } catch (Exception ex) {
+                Console.WriteLine("HTTP Admin Error: " + ex.Message);
+                context.Response.StatusCode = 500;
+            } finally {
+                context.Response.Close();
             }
         }
     }
