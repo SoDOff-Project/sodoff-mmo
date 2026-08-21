@@ -20,7 +20,7 @@ public class Server {
     }
 
     public async Task Run() {
-        _ = Task.Run(() => ListenHttpAdmin());
+        _ = Task.Run(() => ListenTcpAdmin());
         moduleManager.RegisterModules();
         ManagementCommandProcessor.Initialize();
         using Socket listener = new(ipAddress.AddressFamily,
@@ -87,61 +87,39 @@ public class Server {
         }
     }
 
-    private async Task ListenHttpAdmin() {
-        HttpListener listener = new HttpListener();
-        listener.Prefixes.Add("http://localhost:9934/");
+    private async Task ListenTcpAdmin() {
+        TcpListener listener = new TcpListener(IPAddress.Loopback, 9934);
         listener.Start();
-        Console.WriteLine("MMO Admin HTTP Server listening on port 9934");
+        Console.WriteLine("MMO Admin TCP Server listening on port 9934");
         while (true) {
-            HttpListenerContext context = await listener.GetContextAsync();
             try {
-                if (context.Request.Url!.AbsolutePath == "/Admin/SendBuddyEvent") {
-                    string? uid = context.Request.QueryString["uid"];
-                    string? fromUid = context.Request.QueryString["fromUid"];
-                    string? cmdType = context.Request.QueryString["cmdType"];
-
-                    if (!string.IsNullOrEmpty(uid)) {
+                using var client = await listener.AcceptTcpClientAsync();
+                using var stream = client.GetStream();
+                using var reader = new StreamReader(stream);
+                string? line = await reader.ReadLineAsync();
+                if (line != null && line.StartsWith("SBE|")) {
+                    string[] parts = line.Split('|');
+                    if (parts.Length == 4) {
+                        string uid = parts[1];
+                        string fromUid = parts[2];
+                        string cmdType = parts[3];
                         Console.WriteLine($"Sending SBE to user {uid} from {fromUid} cmd {cmdType}");
                         foreach (var room in Room.AllRooms()) {
-                            foreach (var client in room.Clients) {
-                                if (client.PlayerData?.Uid == uid) {
+                            foreach (var mmoClient in room.Clients) {
+                                if (mmoClient.PlayerData?.Uid == uid) {
                                     sodoffmmo.Data.NetworkObject cmd = new sodoffmmo.Data.NetworkObject();
                                     cmd.Add("c", "SBE");
                                     sodoffmmo.Data.NetworkObject payload = new sodoffmmo.Data.NetworkObject();
-                                    payload.Add("arr", new string[] { "SBE", "", fromUid ?? "", uid, cmdType ?? "0" });
+                                    payload.Add("arr", new string[] { "SBE", "", fromUid, uid, cmdType });
                                     cmd.Add("p", payload);
-                                    client.Send(sodoffmmo.Data.NetworkObject.WrapObject(1, 13, cmd).Serialize());
+                                    mmoClient.Send(sodoffmmo.Data.NetworkObject.WrapObject(1, 13, cmd).Serialize());
                                 }
                             }
                         }
                     }
-                    context.Response.StatusCode = 200;
-                } else if (context.Request.Url!.AbsolutePath == "/Admin/GetBuddyLocation") {
-                    string? uid = context.Request.QueryString["uid"];
-                    string response = "";
-                    if (!string.IsNullOrEmpty(uid)) {
-                        foreach (var room in Room.AllRooms()) {
-                            foreach (var client in room.Clients) {
-                                if (client.PlayerData?.Uid == uid) {
-                                    response = room.Name + "|" + room.Id + "|" + client.ClientID;
-                                    break;
-                                }
-                            }
-                            if (response != "") break;
-                        }
-                    }
-                    var buffer = System.Text.Encoding.UTF8.GetBytes(response);
-                    context.Response.StatusCode = 200;
-                    context.Response.ContentLength64 = buffer.Length;
-                    await context.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
-                } else {
-                    context.Response.StatusCode = 404;
                 }
             } catch (Exception ex) {
-                Console.WriteLine("HTTP Admin Error: " + ex.Message);
-                context.Response.StatusCode = 500;
-            } finally {
-                context.Response.Close();
+                Console.WriteLine("TCP Admin Error: " + ex.Message);
             }
         }
     }
