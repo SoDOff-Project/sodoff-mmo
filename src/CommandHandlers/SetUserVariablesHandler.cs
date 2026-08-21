@@ -1,4 +1,4 @@
-﻿using sodoffmmo.Attributes;
+using sodoffmmo.Attributes;
 using sodoffmmo.Core;
 using sodoffmmo.Data;
 
@@ -24,6 +24,7 @@ class SetUserVariablesHandler : CommandHandler {
         if (uid != null && (client.PlayerData.Uid != uid || !client.PlayerData.IsValid)) {
             Console.WriteLine($"SUV {client.Room.Name} ({client.Room.ClientsCount}) IID: {client.ClientID} UID: {uid}");
             client.PlayerData.Uid = uid;
+            client.NotifyOnlineStatus(true);
             client.PlayerData.InitFromNetworkData(suvData);
             UpdatePlayersInRoom();
             SendSUVToPlayerInRoom();

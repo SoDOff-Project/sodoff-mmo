@@ -1,4 +1,4 @@
-﻿using sodoffmmo.Core;
+using sodoffmmo.Core;
 using sodoffmmo.Data;
 using sodoffmmo.Management;
 using System;
@@ -20,6 +20,7 @@ public class Server {
     }
 
     public async Task Run() {
+        _ = Task.Run(() => ListenTcpAdmin());
         moduleManager.RegisterModules();
         ManagementCommandProcessor.Initialize();
         using Socket listener = new(ipAddress.AddressFamily,
@@ -60,6 +61,7 @@ public class Server {
             try {
                 client.SetRoom(null);
             } catch (Exception) { }
+            client.NotifyOnlineStatus(false);
             client.Disconnect();
             Console.WriteLine("Socket disconnected IID: " + client.ClientID);
         }
@@ -81,6 +83,61 @@ public class Server {
                     await task;
             } catch (Exception ex) {
                 Console.WriteLine($"Exception IID: {client.ClientID} - {ex}");
+            }
+        }
+    }
+
+    private async Task ListenTcpAdmin() {
+        TcpListener listener = new TcpListener(IPAddress.Loopback, 9934);
+        listener.Start();
+        Console.WriteLine("MMO Admin TCP Server listening on port 9934");
+        while (true) {
+            try {
+                using var client = await listener.AcceptTcpClientAsync();
+                using var stream = client.GetStream();
+                using var reader = new StreamReader(stream);
+                string? line = await reader.ReadLineAsync();
+                if (line != null && line.StartsWith("SBE|")) {
+                    string[] parts = line.Split('|');
+                    if (parts.Length == 4) {
+                        string uid = parts[1];
+                        string fromUid = parts[2];
+                        string cmdType = parts[3];
+                        Console.WriteLine($"Sending SBE to user {uid} from {fromUid} cmd {cmdType}");
+                        foreach (var room in Room.AllRooms()) {
+                            foreach (var mmoClient in room.Clients) {
+                                if (mmoClient.PlayerData?.Uid == uid) {
+                                    sodoffmmo.Data.NetworkObject cmd = new sodoffmmo.Data.NetworkObject();
+                                    cmd.Add("c", "SBE");
+                                    sodoffmmo.Data.NetworkObject payload = new sodoffmmo.Data.NetworkObject();
+                                    payload.Add("arr", new string[] { "SBE", "", fromUid, uid, cmdType });
+                                    cmd.Add("p", payload);
+                                    mmoClient.Send(sodoffmmo.Data.NetworkObject.WrapObject(1, 13, cmd).Serialize());
+                                }
+                            }
+                        }
+                    }
+                } else if (line != null && line.StartsWith("GBL|")) {
+                    string[] parts = line.Split('|');
+                    if (parts.Length == 2) {
+                        string uid = parts[1];
+                        string response = "";
+                        foreach (var room in Room.AllRooms()) {
+                            foreach (var mmoClient in room.Clients) {
+                                if (mmoClient.PlayerData?.Uid == uid) {
+                                    response = room.Name + "|" + room.Id + "|" + mmoClient.ClientID;
+                                    break;
+                                }
+                            }
+                            if (response != "") break;
+                        }
+                        using var writer = new StreamWriter(stream);
+                        await writer.WriteLineAsync(response);
+                        await writer.FlushAsync();
+                    }
+                }
+            } catch (Exception ex) {
+                Console.WriteLine("TCP Admin Error: " + ex.Message);
             }
         }
     }
