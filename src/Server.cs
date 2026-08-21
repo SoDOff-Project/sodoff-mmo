@@ -117,6 +117,24 @@ public class Server {
                             }
                         }
                     }
+                } else if (line != null && line.StartsWith("GBL|")) {
+                    string[] parts = line.Split('|');
+                    if (parts.Length == 2) {
+                        string uid = parts[1];
+                        string response = "";
+                        foreach (var room in Room.AllRooms()) {
+                            foreach (var mmoClient in room.Clients) {
+                                if (mmoClient.PlayerData?.Uid == uid) {
+                                    response = room.Name + "|" + room.Id + "|" + mmoClient.ClientID;
+                                    break;
+                                }
+                            }
+                            if (response != "") break;
+                        }
+                        using var writer = new StreamWriter(stream);
+                        await writer.WriteLineAsync(response);
+                        await writer.FlushAsync();
+                    }
                 }
             } catch (Exception ex) {
                 Console.WriteLine("TCP Admin Error: " + ex.Message);
