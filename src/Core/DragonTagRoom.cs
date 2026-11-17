@@ -1,4 +1,5 @@
-﻿using System;
+﻿using sodoffmmo.Data;
+using System;
 
 namespace sodoffmmo.Core;
 public class DragonTagRoom : Room {
@@ -6,6 +7,7 @@ public class DragonTagRoom : Room {
     bool tagInProgress = false;
     System.Timers.Timer collisionTimer;
     DateTime lastTagTime = DateTime.MinValue;
+    DateTime lastEmoteTime = DateTime.MinValue;
     readonly object _lock = new object();
 
     public DragonTagRoom(string name) : base(name) {
@@ -55,6 +57,11 @@ public class DragonTagRoom : Room {
     }
 
     void CollisionCheck() {
+        if (DateTime.UtcNow - lastEmoteTime > TimeSpan.FromSeconds(3)) {
+            Send(CreateEmoteNetObject(13).Serialize());
+            lastEmoteTime = DateTime.UtcNow;
+        }
+
         lock (_lock) {
             if (!tagInProgress || it == null)
                 return;
@@ -83,8 +90,18 @@ public class DragonTagRoom : Room {
     }
 
     void PassTag(Client newIt) {
+        Send(CreateEmoteNetObject(3).Serialize());
         it = newIt;
         lastTagTime = DateTime.UtcNow;
         Send(Utils.BuildServerSideMessage($"{it.PlayerData.DisplayName} is it. Run!", "Dragon Tag"));
+    }
+
+    NetworkObject CreateEmoteNetObject(int id) {
+        NetworkObject obj = new();
+        obj.Add("t", (byte)0);
+        obj.Add("r", Id);
+        obj.Add("u", it!.ClientID);
+        obj.Add("m", $"EID:{id}");
+        return NetworkObject.WrapObject(0, 7, obj);
     }
 }
