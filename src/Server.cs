@@ -31,6 +31,9 @@ public class Server {
 
         SpecialRoom.CreateRooms();
 
+        if (!string.IsNullOrEmpty(Configuration.ServerConfiguration.DragonTagRoom))
+            _ = new DragonTagRoom(Configuration.ServerConfiguration.DragonTagRoom);
+
         await Listen(listener);
     }
 
