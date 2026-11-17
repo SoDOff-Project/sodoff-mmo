@@ -10,7 +10,7 @@ class TempMuteCommand : IManagementCommand {
             client.Send(Utils.BuildServerSideMessage("TempMute: Invalid number of arguments", "Server"));
             return;
         }
-        Client? target = client.Room.Clients.FirstOrDefault(x => x.PlayerData.DiplayName == arguments[0]);
+        Client? target = client.Room.Clients.FirstOrDefault(x => x.PlayerData.DisplayName == arguments[0]);
         if (target == null) {
             client.Send(Utils.BuildServerSideMessage($"TempMute: user {arguments[0]} not found", "Server"));
             return;

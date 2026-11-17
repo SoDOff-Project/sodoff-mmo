@@ -14,7 +14,7 @@ class BypassCommand : IManagementCommand
         }
 
         string message = string.Join(' ', arguments);
-        client.Room.Send(Utils.BuildChatMessage(client.PlayerData.Uid, message, client.PlayerData.DiplayName), client);
+        client.Room.Send(Utils.BuildChatMessage(client.PlayerData.Uid, message, client.PlayerData.DisplayName), client);
 
         NetworkObject cmd = new();
         NetworkObject data = new();

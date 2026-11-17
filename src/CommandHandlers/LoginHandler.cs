@@ -84,7 +84,7 @@ class LoginHandler : CommandHandler
 
             AuthenticationInfo info = Utils.DeserializeXml<AuthenticationInfo>(responseString);
             if (info.Authenticated) {
-                client.PlayerData.DiplayName = info.DisplayName;
+                client.PlayerData.DisplayName = info.DisplayName;
                 client.PlayerData.Role = info.Role;
                 return true;
             }

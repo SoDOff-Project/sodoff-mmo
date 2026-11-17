@@ -32,12 +32,12 @@ class ChatMessageHandler : CommandHandler {
     }
 
     public void Chat(Client client, string message) {
-        if (Configuration.ServerConfiguration.Authentication >= AuthenticationMode.RequiredForChat && client.PlayerData.DiplayName == "placeholder") {
+        if (Configuration.ServerConfiguration.Authentication >= AuthenticationMode.RequiredForChat && client.PlayerData.DisplayName == "placeholder") {
             client.Send(Utils.BuildServerSideMessage("You must be authenticated to use the chat", "Server"));
             return;
         }
 
-        client.Room.Send(Utils.BuildChatMessage(client.PlayerData.Uid, message, client.PlayerData.DiplayName), client);
+        client.Room.Send(Utils.BuildChatMessage(client.PlayerData.Uid, message, client.PlayerData.DisplayName), client);
 
         NetworkObject cmd = new();
         NetworkObject data = new();
