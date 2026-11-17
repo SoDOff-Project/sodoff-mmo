@@ -44,6 +44,7 @@ internal sealed class ServerConfiguration {
     public AuthenticationMode Authentication { get; set; } = AuthenticationMode.Disabled;
     public string ApiUrl { get; set; } = "";
     public string BypassToken { get; set; } = "";
+    public string? DragonTagRoom { get; set; } = null;
 }
 
 public enum AuthenticationMode {

@@ -47,7 +47,7 @@ public class Room {
         }
     }
 
-    public void AddClient(Client client) {
+    public virtual void AddClient(Client client) {
         lock (roomLock) {
             if (IsRemoved)
                 throw new Exception("Call AddClient on removed room");
@@ -58,7 +58,7 @@ public class Room {
         }
     }
 
-    public void RemoveClient(Client client) {
+    public virtual void RemoveClient(Client client) {
         lock (roomLock) {
             clients.Remove(client);
             if (AutoRemove && ClientsCount == 0) {
