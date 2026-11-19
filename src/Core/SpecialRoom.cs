@@ -3,11 +3,17 @@ using sodoffmmo.Data;
 namespace sodoffmmo.Core;
 
 public class SpecialRoom : Room {
-    public AmbassadorConfiguration? ambassadorConfig;
-    public double[] ambassadorGauges = new double[3]; // There is always a maximum of 3.
-    System.Timers.Timer? ambassadorTimer;
+    public readonly AmbassadorConfiguration? ambassadorConfig;
+    public readonly double[] ambassadorGauges = new double[3]; // There is always a maximum of 3.
+    readonly System.Timers.Timer? ambassadorTimer;
 
     public static void CreateRooms() {
+        foreach (var datapair in Configuration.ServerConfiguration.AmbassadorRooms) {
+            string room = datapair.Key;
+            Console.WriteLine($"Setup Ambassador for {room}");
+            new SpecialRoom(room, datapair.Value);
+        }
+        
         foreach (var room in Configuration.ServerConfiguration.RoomAlerts) {
             foreach (var alert in room.Value) {
                 AlertInfo alertInfo = new AlertInfo(
@@ -20,35 +26,28 @@ public class SpecialRoom : Room {
                 (rooms.GetValueOrDefault(room.Key) as SpecialRoom ?? new SpecialRoom(room.Key)).AddAlert(alertInfo);
             }
         }
-
-        foreach (var datapair in Configuration.ServerConfiguration.AmbassadorRooms) {
-            string room = datapair.Key;
-            Console.WriteLine($"Setup Ambassador for {room}");
-            (rooms.GetValueOrDefault(room) as SpecialRoom ?? new SpecialRoom(room)).InitAmbassador(datapair.Value);
-        }
     }
 
-    public SpecialRoom(string name) : base(name) {}
-
-    public void InitAmbassador(AmbassadorConfiguration config) {
+    public SpecialRoom(string name, AmbassadorConfiguration? config = null) : base(name) {
         this.ambassadorConfig = config;
-        for (int i=0;i<this.ambassadorGauges.Length;i++) this.ambassadorGauges[i] = config.GaugeStart;
-        if (config.GaugeDecayRate > 0) {
-            this.ambassadorTimer = new(config.GaugeDecayRate * 1000) {
-                AutoReset = true,
-                Enabled = true
-            };
-            this.ambassadorTimer.Elapsed += (sender, e) => {
-                if (!config.GaugeDecayOnlyWhenInRoom || ClientsCount > 0) {
-                    for (int i=0;i<this.ambassadorGauges.Length;i++) {
-                        if (this.ambassadorGauges[i] > 0) {
-                            this.ambassadorGauges[i]--;
-                            Send(Utils.VlNetworkPacket(GetRoomVars(), Id));
-                        }
-                    }
-                }
-            };
-        }
+        if (config == null) return;
+        
+        Array.Fill(this.ambassadorGauges, config.GaugeStart);
+        if (config.GaugeDecayRate <= 0) return;
+        
+        this.ambassadorTimer = new(config.GaugeDecayRate * 1000) {
+            AutoReset = true,
+            Enabled = true
+        };
+        this.ambassadorTimer.Elapsed += (sender, e) => {
+            if (config.GaugeDecayOnlyWhenInRoom && ClientsCount == 0) return;
+            
+            for (int i = 0; i < this.ambassadorGauges.Length; i++) {
+                if (this.ambassadorGauges[i] <= 0) continue;
+                this.ambassadorGauges[i]--;
+                Send(Utils.VlNetworkPacket(GetRoomVars(), Id));
+            }
+        };
     }
 
     internal override NetworkArray GetRoomVars() {
