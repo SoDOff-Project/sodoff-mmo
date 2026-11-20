@@ -16,19 +16,21 @@ class CounterEventHandler : CommandHandler {
             "COUNT3" => 2,
             _ => -1
         };
-        if (index != -1) {
-            double newVal = room.ambassadorGauges[index] + (1/room.ambassadorConfig.GaugePlayers);
-            if (newVal > room.ambassadorConfig.GaugeMax) {
-                room.ambassadorGauges[index] = room.ambassadorConfig.ResetOnMaxReached
-                    ? room.ambassadorConfig.GaugeStart
-                    : room.ambassadorConfig.GaugeMax;
-            } else {
-                room.ambassadorGauges[index] = newVal;
-            }
-            room.Send(Utils.VlNetworkPacket(room.GetRoomVars(), client.Room.Id));
-        } else {
+        
+        if (index == -1) {
             Console.WriteLine($"Invalid attempt to increment room var {name} in {room.Name}.");
-        } 
+            return Task.CompletedTask;
+        }
+        
+        double newVal = room.ambassadorGauges[index] + (1/room.ambassadorConfig.GaugePlayers);
+        if (newVal > room.ambassadorConfig.GaugeMax) {
+            room.ambassadorGauges[index] = room.ambassadorConfig.ResetOnMaxReached
+                ? room.ambassadorConfig.GaugeStart
+                : room.ambassadorConfig.GaugeMax;
+        } else {
+            room.ambassadorGauges[index] = newVal;
+        }
+        room.Send(Utils.VlNetworkPacket(room.GetRoomVars(), client.Room.Id));
         
         return Task.CompletedTask;
     }
