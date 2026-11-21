@@ -10,6 +10,11 @@ internal class SimulatedPlayer {
     string fp = "";
     string room;
     System.Timers.Timer spvTimer = new(2500);
+    System.Timers.Timer collisionTimer = new(500);
+    HashSet<Client> prevCollision = new();
+    HashSet<Client> currCollision = new();
+    HashSet<string> rewardedPlayers = new();
+
     public SimulatedPlayer(Client creator) {
         client.PlayerData.DisplayName = "";
         room = creator.Room.Name;
@@ -64,11 +69,16 @@ internal class SimulatedPlayer {
         spvTimer.AutoReset = true;
         spvTimer.Elapsed += (s, e) => SendSPV();
         spvTimer.Start();
+        collisionTimer.AutoReset = true;
+        collisionTimer.Elapsed += (s, e) => CollisionCheck();
+        collisionTimer.Start();
     }
 
     public void Destroy() {
         spvTimer.Stop();
         spvTimer.Dispose();
+        collisionTimer.Stop();
+        collisionTimer.Dispose();
         client.SetRoom(null);
     }
 
@@ -130,5 +140,35 @@ internal class SimulatedPlayer {
 
         NetworkPacket packet = NetworkObject.WrapObject(1, 13, cmd).Serialize();
         client.Room.Send(packet, client);
+    }
+
+    void CollisionCheck() {
+        currCollision.Clear();
+        double radius = 3.0 * 3.0;
+
+        foreach (var c in client.Room.Clients) {
+            if (c == client)
+                continue;
+
+            var p = c.PlayerData;
+            double dx = p.P1 - client.PlayerData.P1;
+            double dy = p.P2 - client.PlayerData.P2;
+            double dz = p.P3 - client.PlayerData.P3;
+            double dist = dx * dx + dy * dy + dz * dz;
+
+            if (dist <= radius) {
+                currCollision.Add(c);
+                if (prevCollision.Contains(c))
+                    continue;
+                if (rewardedPlayers.Contains(c.PlayerData.Uid)) {
+                    c.Send(Utils.BuildServerSideMessage("I can't give you any points, you've already found me!", "Hidden Dragon"));
+                    continue;
+                }
+                c.Send(Utils.BuildServerSideMessage("Congratulations! You found me!", "Hidden Dragon"));
+                rewardedPlayers.Add(c.PlayerData.Uid);
+                // TODO: call clan points endpoint
+            }
+        }
+        (prevCollision, currCollision) = (currCollision, prevCollision);
     }
 }
