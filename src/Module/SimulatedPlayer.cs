@@ -66,6 +66,12 @@ internal class SimulatedPlayer {
         spvTimer.Start();
     }
 
+    public void Destroy() {
+        spvTimer.Stop();
+        spvTimer.Dispose();
+        client.SetRoom(null);
+    }
+
     private void UpdatePlayersInRoom() {
         NetworkObject data = new();
         NetworkObject acknowledgement = new();
