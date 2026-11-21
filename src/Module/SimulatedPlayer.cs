@@ -7,7 +7,6 @@ internal class SimulatedPlayer {
     public static Dictionary<string, SimulatedPlayer> SimulatedPlayers { get; } = new();
 
     DummyClient client = new();
-    string fp = "";
     string room;
     System.Timers.Timer spvTimer = new(2500);
     System.Timers.Timer collisionTimer = new(500);
@@ -30,13 +29,12 @@ internal class SimulatedPlayer {
         avatarParts += ",{\"PartType\":\"Head\",\"Offsets\":null,\"Geometries\":[\"NULL\"],\"Textures\":[\"DWAvatarFacialDecals01.unity3d/Decal_Blank\",\"DWAvatarFacialDecals01.unity3d/Decal_Blank\",\"DWAvatarFacialDecals01.unity3d/Decal_Blank\",\"DWAvatarFacialDecals01.unity3d/Decal_Blank\",\"DWAvatarFacialDecals01.unity3d/Decal_Blank\",\"DWAvatarFacialWarPaints01.unity3d/Decal_Fill\"],\"Attributes\":[]}";
         avatarParts += ",{\"PartType\":\"Legs\",\"Offsets\":null,\"Geometries\":[\"NULL\"],\"Textures\":[null],\"Attributes\":[]}";
         avatarParts += ",{\"PartType\":\"Torso\",\"Offsets\":null,\"Geometries\":[\"NULL\"],\"Textures\":[null],\"Attributes\":null}";
-        fp = creator.PlayerData.GetVariable("FP");
 
         client.PlayerData.Uid = $"0{id}67-89ab-cdef-fedc-ba9876543211";
         client.PlayerData.ZoneName = creator.PlayerData.ZoneName;
         client.PlayerData.SetVariable("L", creator.Room.Name);
         client.PlayerData.SetVariable("A", $"{{\"Id\":{client.ClientID},\"DisplayName\":\" \",\"Part\":[{avatarParts}],\"GenderType\":1}}");
-        client.PlayerData.SetVariable("FP", fp);
+        client.PlayerData.SetVariable("FP", creator.PlayerData.GetVariable("FP"));
         client.PlayerData.SetVariable("MBF", "8");
         client.PlayerData.SetVariable("F", "9");
         client.PlayerData.SetVariable("J", "2");
