@@ -26,7 +26,7 @@ public class Client {
         }
     }
 
-    public async Task Receive() {
+    public virtual async Task Receive() {
         byte[] buffer = new byte[2048];
         int len = await socket.ReceiveAsync(buffer, SocketFlags.None);
         if (len == 0)
@@ -38,7 +38,7 @@ public class Client {
         return socketBuffer.ReadPacket(out packet);
     }
 
-    public void Send(NetworkPacket packet) {
+    public virtual void Send(NetworkPacket packet) {
         try {
             socket.Send(packet.SendData);
         } catch (SocketException) {
@@ -113,7 +113,7 @@ public class Client {
         Room.Send(packet, this);
     }
 
-    public void Disconnect() {
+    public virtual void Disconnect() {
         try {
             socket.Shutdown(SocketShutdown.Both);
         } finally {
@@ -131,7 +131,7 @@ public class Client {
         scheduledDisconnect = true;
     }
 
-    public bool Connected {
+    public virtual bool Connected {
         get {
             return socket.Connected && !scheduledDisconnect;
         }
