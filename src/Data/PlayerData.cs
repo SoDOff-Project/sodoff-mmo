@@ -40,6 +40,8 @@ public class PlayerData {
 
     public long last_ue_time { get; set; } = 0;
 
+    private static readonly string[] AssetPrefixes = { "RS_ROOT/", "RS_DATA/", "RS_SCENE/", "RS_SOUND/", "RS_SHARED/", "RS_CONTENT/", "RS_MOVIES/", "RS_APP/" };
+
     public static readonly string[] SupportedVariables = {
         "A",   // avatar data
         "FP",  // raised pet data
@@ -72,8 +74,8 @@ public class PlayerData {
         return variables[varName];
     }
 
-    public string SetVariable(string varName, string value) {
-        // do not store in variables directory
+    public string? SetVariable(string varName, string value) {
+        // do not store in variables dictionary
         if (varName == "UID") {
             return value;
         }
@@ -86,12 +88,25 @@ public class PlayerData {
             return value;
         }
 
-        // fix variable value before store
+        // validate and fix FP value before storing
         if (varName == "FP") {
-            value = FixMountState(value);
+            string[] array = value.Split('*');
+            Dictionary<string, string> parsedFP = new();
+            foreach (string str in array) {
+                string[] keyValPair = str.Split('$', 2);
+                if (keyValPair.Length == 2)
+                    parsedFP[keyValPair[0]] = keyValPair[1];
+            }
+
+            if (!ValidFPUrls(parsedFP)) {
+                Console.WriteLine($"Invalid FP: {value}"); // TODO: remove when we're sure we're not blocking valid FP strings
+                return null;
+            }
+
+            value = FixMountState(value, parsedFP);
         }
 
-        // store in directory
+        // store in dictionary
         variables[varName] = value;
         return value;
     }
@@ -172,7 +187,35 @@ public class PlayerData {
         }
     }
 
-    private string FixMountState(string value) {
+    private bool ValidFPUrls(Dictionary<string, string> parsedFP) {
+        if (parsedFP.TryGetValue("G", out string geometry) && !IsValidAssetUrl(geometry))
+            return false;
+
+        if (parsedFP.TryGetValue("T", out string texture)
+            && !string.IsNullOrEmpty(texture) && !IsValidAssetUrl(texture))
+            return false;
+
+        if (parsedFP.TryGetValue("S", out string accessories)) {
+            string[] s = accessories.Split('$');
+            if (s.Length % 3 != 1 || s.Last() != "")
+                return false;
+            int count = s.Length / 3;
+            for (int i = 0; i < count; i++) {
+                string accGeometry = s[i * 3 + 1];
+                string accTexture = s[i * 3 + 2];
+
+                if (!string.IsNullOrEmpty(accGeometry) && !IsValidAccessoryUrl(accGeometry))
+                    return false;
+                if (!string.IsNullOrEmpty(accTexture) && !IsValidAccessoryUrl(accTexture))
+                    return false;
+            }
+        }
+
+
+        return true;
+    }
+
+    private string FixMountState(string value, Dictionary<string, string> parsedFP) {
         // raised pet geometry - set from Fp
         PetGeometryType GeometryType = PetGeometryType.Default;
         // raised pet age - set from Fp
@@ -180,17 +223,11 @@ public class PlayerData {
         // raised pet mounted - set from Fp
         bool PetMounted = false;
 
-        string[] array = value.Split('*');
-        Dictionary<string, string> keyValPairs = new();
-        foreach (string str in array) {
-            string[] keyValPair = str.Split('$');
-            if (keyValPair.Length == 2)
-                keyValPairs[keyValPair[0]] = keyValPair[1];
-        }
-        if (keyValPairs.TryGetValue("G", out string geometry))
+        if (parsedFP.TryGetValue("G", out string geometry)) {
             if (geometry.ToLower().Contains("terribleterror"))
                 GeometryType = PetGeometryType.Terror;
-        if (keyValPairs.TryGetValue("A", out string age)) {
+        }
+        if (parsedFP.TryGetValue("A", out string age)) {
             switch (age) {
                 case "E": PetAge = PetAge.EggInHand; break;
                 case "B": PetAge = PetAge.Baby;      break;
@@ -200,7 +237,7 @@ public class PlayerData {
                 case "Ti": PetAge = PetAge.Titan;    break;
             }
         }
-        if (keyValPairs.TryGetValue("U", out string userdata)) {
+        if (parsedFP.TryGetValue("U", out string userdata)) {
             PetMounted = (userdata == "0" || userdata == "1");
         }
         if (PetMounted && !Configuration.ServerConfiguration.AllowChaos &&
@@ -212,6 +249,12 @@ public class PlayerData {
             return value;
         }
     }
+
+    private bool IsValidAssetUrl(string url)
+        => AssetPrefixes.Any(p => url.StartsWith(p, StringComparison.OrdinalIgnoreCase));
+
+    private bool IsValidAccessoryUrl(string url)
+        => url.StartsWith('&') || url.StartsWith("NULL&", StringComparison.OrdinalIgnoreCase) || IsValidAssetUrl(url);
 }
 
 public enum PetGeometryType {

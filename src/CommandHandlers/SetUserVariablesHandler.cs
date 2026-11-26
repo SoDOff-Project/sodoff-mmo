@@ -44,6 +44,8 @@ class SetUserVariablesHandler : CommandHandler {
             string? value = suvData.Get<string>(varName);
             if (value != null) {
                 value = client.PlayerData.SetVariable(varName, value);
+                if (value == null)
+                    continue;
                 updated = true;
                 data.Add(varName, value);
                 vl.Add(NetworkArray.Param(varName, value));
