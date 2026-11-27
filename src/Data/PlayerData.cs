@@ -94,10 +94,8 @@ public class PlayerData {
                         parsedFP[keyValPair[0]] = keyValPair[1];
                 }
 
-                if (!ValidFPUrls(parsedFP)) {
-                    Console.WriteLine($"Invalid FP: {value}"); // TODO: remove when we're sure we're not blocking valid FP strings
+                if (!ValidFPUrls(parsedFP))
                     return null;
-                }
 
                 value = FixMountState(value, parsedFP);
                 break;
