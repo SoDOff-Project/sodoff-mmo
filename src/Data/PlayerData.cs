@@ -76,39 +76,36 @@ public class PlayerData {
     }
 
     public string? SetVariable(string varName, string value) {
-        // do not store in variables dictionary
-        if (varName == "UID") {
-            return value;
-        }
-        if (varName == "R") {
-            R = float.Parse(value, CultureInfo.InvariantCulture);
-            return value;
-        }
-        if (varName == "F") {
-            F = unchecked((int)Convert.ToUInt32(value, 16));
-            return value;
-        }
+        switch (varName) {
+            case "UID":
+                return value;
+            case "R":
+                R = float.Parse(value, CultureInfo.InvariantCulture);
+                return value;
+            case "F":
+                F = unchecked((int)Convert.ToUInt32(value, 16));
+                return value;
+            case "FP":
+                string[] array = value.Split('*');
+                Dictionary<string, string> parsedFP = new();
+                foreach (string str in array) {
+                    string[] keyValPair = str.Split('$', 2);
+                    if (keyValPair.Length == 2)
+                        parsedFP[keyValPair[0]] = keyValPair[1];
+                }
 
-        // validate and fix FP value before storing
-        if (varName == "FP") {
-            string[] array = value.Split('*');
-            Dictionary<string, string> parsedFP = new();
-            foreach (string str in array) {
-                string[] keyValPair = str.Split('$', 2);
-                if (keyValPair.Length == 2)
-                    parsedFP[keyValPair[0]] = keyValPair[1];
-            }
+                if (!ValidFPUrls(parsedFP)) {
+                    Console.WriteLine($"Invalid FP: {value}"); // TODO: remove when we're sure we're not blocking valid FP strings
+                    return null;
+                }
 
-            if (!ValidFPUrls(parsedFP)) {
-                Console.WriteLine($"Invalid FP: {value}"); // TODO: remove when we're sure we're not blocking valid FP strings
-                return null;
-            }
-
-            value = FixMountState(value, parsedFP);
+                value = FixMountState(value, parsedFP);
+                break;
+            case "PU":
+                if (!ValidPUUrls(value))
+                    return null;
+                break;
         }
-
-        if (varName == "PU" && !ValidPUUrls(value))
-            return null;
 
         // store in dictionary
         variables[varName] = value;
