@@ -1,5 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 using System.Globalization;
+using System.Text.Json;
 using sodoffmmo.Core;
 using sodoffmmo.Management;
 
@@ -106,6 +107,9 @@ public class PlayerData {
             value = FixMountState(value, parsedFP);
         }
 
+        if (varName == "PU" && !ValidPUUrls(value))
+            return null;
+
         // store in dictionary
         variables[varName] = value;
         return value;
@@ -187,6 +191,24 @@ public class PlayerData {
         }
     }
 
+    private bool ValidPUUrls(string value) {
+        try {
+            using var doc = JsonDocument.Parse(value);
+            var root = doc.RootElement;
+
+            if (root.ValueKind != JsonValueKind.Object)
+                return true;
+
+            if (root.TryGetProperty("G", out var g) && g.ValueKind == JsonValueKind.String && !IsValidAssetUrl(g.GetString()!))
+                return false;
+
+            if (root.TryGetProperty("T", out var t) && t.ValueKind == JsonValueKind.String && !IsValidAccessoryUrl(t.GetString()!))
+                return false;
+        } catch (JsonException) {}
+
+        return true;
+    }
+
     private bool ValidFPUrls(Dictionary<string, string> parsedFP) {
         if (parsedFP.TryGetValue("G", out string geometry) && !IsValidAssetUrl(geometry))
             return false;
@@ -210,7 +232,6 @@ public class PlayerData {
                     return false;
             }
         }
-
 
         return true;
     }
