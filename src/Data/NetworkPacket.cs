@@ -17,7 +17,7 @@ public class NetworkPacket {
         get {
             NetworkData sendData = new();
             sendData.WriteValue(header);
-            sendData.WriteValue((short)data.Length);
+            sendData.WriteValue((ushort)data.Length);
             sendData.WriteChunk(data);
             return sendData.Data;
         }

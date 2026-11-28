@@ -9,7 +9,7 @@ internal class SocketBuffer {
     NetworkData data = new();
     Status status = Status.Header;
     byte header;
-    short length;
+    ushort length;
     byte[] value = new byte[0];
     public void Write(byte[] buffer, int length) {
         data.WriteChunk(buffer, 0, length);
@@ -35,7 +35,7 @@ internal class SocketBuffer {
         if (data.RemainingLength < 3)
             return;
         header = data.ReadByte();
-        length = data.ReadShort();
+        length = data.ReadUShort();
         status = Status.Value;
     }
 
