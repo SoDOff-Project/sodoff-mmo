@@ -1,18 +1,21 @@
 ﻿using sodoffmmo.Core;
 using sodoffmmo.Data;
+using System.Net;
 
 
 namespace sodoffmmo.Module;
 internal class SimulatedPlayer {
     public static Dictionary<string, SimulatedPlayer> SimulatedPlayers { get; } = new();
+    static readonly HttpClient httpClient = new() { Timeout = TimeSpan.FromSeconds(3) };
 
     DummyClient client = new();
     string room;
-    System.Timers.Timer spvTimer = new(2500);
-    System.Timers.Timer collisionTimer = new(500);
     HashSet<Client> prevCollision = new();
     HashSet<Client> currCollision = new();
     HashSet<string> rewardedPlayers = new();
+    Lock rewardSetLock = new();
+    CancellationTokenSource cts = new();
+    Task timers = Task.CompletedTask;
 
     public SimulatedPlayer(Client creator) {
         client.PlayerData.DisplayName = "";
@@ -64,19 +67,14 @@ internal class SimulatedPlayer {
         await Task.Delay(1000);
         SendSPV();
 
-        spvTimer.AutoReset = true;
-        spvTimer.Elapsed += (s, e) => SendSPV();
-        spvTimer.Start();
-        collisionTimer.AutoReset = true;
-        collisionTimer.Elapsed += (s, e) => CollisionCheck();
-        collisionTimer.Start();
+        timers = Task.WhenAll(
+            RunPeriodicAsync(TimeSpan.FromMilliseconds(2500), SendSPV, cts.Token),
+            RunPeriodicAsync(TimeSpan.FromMilliseconds(500), CollisionCheck, cts.Token));
     }
 
     public void Destroy() {
-        spvTimer.Stop();
-        spvTimer.Dispose();
-        collisionTimer.Stop();
-        collisionTimer.Dispose();
+        cts.Cancel();
+        timers.ContinueWith(_ => cts.Dispose());
         client.SetRoom(null);
     }
 
@@ -140,6 +138,19 @@ internal class SimulatedPlayer {
         client.Room.Send(packet, client);
     }
 
+    async Task RunPeriodicAsync(TimeSpan interval, Action action, CancellationToken ct) {
+        using var timer = new PeriodicTimer(interval);
+        try {
+            while (await timer.WaitForNextTickAsync(ct)) {
+                try {
+                    action();
+                } catch (Exception ex) {
+                    Console.WriteLine($"PeriodicTimer error ({action.Method.Name}): {ex}");
+                }
+            }
+        } catch (OperationCanceledException) {}
+    }
+
     void CollisionCheck() {
         currCollision.Clear();
         double radius = 3.0 * 3.0;
@@ -158,15 +169,51 @@ internal class SimulatedPlayer {
                 currCollision.Add(c);
                 if (prevCollision.Contains(c))
                     continue;
-                if (rewardedPlayers.Contains(c.PlayerData.Uid)) {
+
+                bool alreadyRewarded;
+                lock (rewardSetLock) {
+                    alreadyRewarded = !rewardedPlayers.Add(c.PlayerData.Uid);
+                }
+                if (alreadyRewarded) {
                     c.Send(Utils.BuildServerSideMessage("I can't give you any points, you've already found me!", "Hidden Dragon"));
                     continue;
                 }
+
                 c.Send(Utils.BuildServerSideMessage("Congratulations! You found me!", "Hidden Dragon"));
-                rewardedPlayers.Add(c.PlayerData.Uid);
-                // TODO: call clan points endpoint
+                Task.Run(() => CallEventPointsEndpointAsync(c));
             }
         }
         (prevCollision, currCollision) = (currCollision, prevCollision);
+    }
+
+    async Task CallEventPointsEndpointAsync(Client c) {
+        try {
+            using var content = new FormUrlEncodedContent(
+                new Dictionary<string, string> {
+                                { "apiToken", c.PlayerData.UNToken },
+                                { "uid",      c.PlayerData.Uid },
+                                { "secret",   Configuration.ServerConfiguration.EventSecret },
+            });
+            using var response = await httpClient.PostAsync($"{Configuration.ServerConfiguration.ApiUrl}/GroupWebService.asmx/SetEventGroupPoint", content);
+
+            if (!response.IsSuccessStatusCode) {
+                lock (rewardSetLock) {
+                    rewardedPlayers.Remove(c.PlayerData.Uid);
+                }
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                    c.Send(Utils.BuildServerSideMessage("You are not in a clan, join a clan to get points.", "Hidden Dragon"));
+                else
+                    c.Send(Utils.BuildServerSideMessage("An error occured while giving points to your clan. Please try again.", "Hidden Dragon"));
+            }
+        } catch (HttpRequestException) {
+            lock (rewardSetLock) {
+                rewardedPlayers.Remove(c.PlayerData.Uid);
+            }
+            c.Send(Utils.BuildServerSideMessage("An error occured while giving points to your clan. Please try again.", "Hidden Dragon"));
+        } catch (Exception ex) {
+            Console.WriteLine($"Unexpected error awarding points to {c.PlayerData.Uid}: {ex}");
+            c.Send(Utils.BuildServerSideMessage("An error occured while giving points to your clan. Please report this to the server operators.", "Hidden Dragon"));
+        }
+
     }
 }
