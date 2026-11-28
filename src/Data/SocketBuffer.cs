@@ -35,6 +35,10 @@ internal class SocketBuffer {
         if (data.RemainingLength < 3)
             return;
         header = data.ReadByte();
+        if ((header & 8) != 0) {
+            Console.WriteLine("Unsupported big packet received.");
+            throw new InvalidDataException("Unsupported big packet received.");
+        }
         length = data.ReadUShort();
         status = Status.Value;
     }

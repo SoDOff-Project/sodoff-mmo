@@ -15,6 +15,8 @@ public class NetworkPacket {
 
     public byte[] SendData {
         get {
+            if (data.Length > ushort.MaxValue)
+                Console.WriteLine("SendData bigger than supported max length."); // just for temporary diagnostics
             NetworkData sendData = new();
             sendData.WriteValue(header);
             sendData.WriteValue((ushort)data.Length);
